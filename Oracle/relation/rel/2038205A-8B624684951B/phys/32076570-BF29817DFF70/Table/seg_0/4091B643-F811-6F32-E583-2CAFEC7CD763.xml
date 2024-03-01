@@ -1,0 +1,90 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<TableProxyOraclev11g class="oracle.dbtools.crest.model.design.storage.oracle.v11g.TableProxyOraclev11g" name="EMPLOYEE" directorySegmentName="seg_0" id="4091B643-F811-6F32-E583-2CAFEC7CD763">
+<createdBy>NSI</createdBy>
+<createdTime>2024-03-01 12:37:22 UTC</createdTime>
+<ownerDesignName>relation</ownerDesignName>
+<schemaObject>D4A976FF-D5AB-0623-18F9-E7FF15AB68CF</schemaObject>
+<logging>YES</logging>
+<partitionedRowMovement>DISABLE</partitionedRowMovement>
+<segment>07730ADF-E458-03B9-A7DD-C191CD465908</segment>
+<tableSpace>52911C5A-7FC6-4DDC-FE5F-A09CF191E4CB</tableSpace>
+<temporaryChanged>false</temporaryChanged>
+<accessDriverType>oracle_loader</accessDriverType>
+<rejectLimit></rejectLimit>
+<columnProxies itemClass="oracle.dbtools.crest.model.design.storage.oracle.v12c.ColumnProxyOraclev12c">
+<ColumnProxy name="ADRESS" id="1CC3DECF-F043-4A35-909C-677EAF25DD0D">
+<createdBy>NSI</createdBy>
+<createdTime>2024-03-01 12:37:22 UTC</createdTime>
+<ownerDesignName>relation</ownerDesignName>
+</ColumnProxy>
+<ColumnProxy name="SALAIRE" id="3293C11F-D804-3746-86B0-C3C84994D07B">
+<createdBy>NSI</createdBy>
+<createdTime>2024-03-01 12:37:22 UTC</createdTime>
+<ownerDesignName>relation</ownerDesignName>
+</ColumnProxy>
+<ColumnProxy name="NOM" id="711715E0-8B33-E821-2799-EF55F3C4C1E3">
+<createdBy>NSI</createdBy>
+<createdTime>2024-03-01 12:37:22 UTC</createdTime>
+<ownerDesignName>relation</ownerDesignName>
+</ColumnProxy>
+<ColumnProxy name="CIN" id="89EBFF36-2059-3565-43F3-F650D48A23F5">
+<createdBy>NSI</createdBy>
+<createdTime>2024-03-01 12:37:22 UTC</createdTime>
+<ownerDesignName>relation</ownerDesignName>
+</ColumnProxy>
+<ColumnProxy name="PRENOM" id="B17D59B2-DEC5-ED4F-692B-E21FF9AE79BC">
+<createdBy>NSI</createdBy>
+<createdTime>2024-03-01 12:37:22 UTC</createdTime>
+<ownerDesignName>relation</ownerDesignName>
+</ColumnProxy>
+<ColumnProxy name="NUMERO" id="D37AF7EE-68A4-AAEF-0EC0-6524EBCB2FE2">
+<createdBy>NSI</createdBy>
+<createdTime>2024-03-01 12:37:22 UTC</createdTime>
+<ownerDesignName>relation</ownerDesignName>
+</ColumnProxy>
+</columnProxies>
+<indexProxies>
+<IndexProxy class="oracle.dbtools.crest.model.design.storage.oracle.v10g.IndexProxyOraclev10g" name="EMPLOYEE_PK" id="12381E23-81EE-7C34-94E1-3E05BAB3E630">
+<createdBy>NSI</createdBy>
+<createdTime>2024-03-01 12:37:22 UTC</createdTime>
+<ownerDesignName>relation</ownerDesignName>
+<schemaObject>D4A976FF-D5AB-0623-18F9-E7FF15AB68CF</schemaObject>
+<segment>67F8F2EF-06BC-9A4B-7077-D04C11C77605</segment>
+<tableSpace>52911C5A-7FC6-4DDC-FE5F-A09CF191E4CB</tableSpace>
+</IndexProxy>
+<IndexProxy class="oracle.dbtools.crest.model.design.storage.oracle.v10g.IndexProxyOraclev10g" name="UK_EMPLOYEE" id="B0363BEA-2077-1501-3E4B-2EF9D3D6ABF3">
+<createdBy>NSI</createdBy>
+<createdTime>2024-03-01 12:37:22 UTC</createdTime>
+<ownerDesignName>relation</ownerDesignName>
+<schemaObject>D4A976FF-D5AB-0623-18F9-E7FF15AB68CF</schemaObject>
+<segment>67F8F2EF-06BC-9A4B-7077-D04C11C77605</segment>
+<tableSpace>52911C5A-7FC6-4DDC-FE5F-A09CF191E4CB</tableSpace>
+</IndexProxy>
+</indexProxies>
+<primaryKeys>
+<PrimaryKey class="oracle.dbtools.crest.model.design.storage.oracle.v10g.PKProxyOraclev10g" name="EMPLOYEE_PK" id="99FA5AEA-83D7-2837-1485-230F0B8A2FB0">
+<createdBy>NSI</createdBy>
+<createdTime>2024-03-01 12:37:22 UTC</createdTime>
+<ownerDesignName>relation</ownerDesignName>
+<segment>67F8F2EF-06BC-9A4B-7077-D04C11C77605</segment>
+<tableSpace>52911C5A-7FC6-4DDC-FE5F-A09CF191E4CB</tableSpace>
+<existingIndex>12381E23-81EE-7C34-94E1-3E05BAB3E630</existingIndex>
+<indexSegment>67F8F2EF-06BC-9A4B-7077-D04C11C77605</indexSegment>
+<indexSort>SORTED</indexSort>
+<usingIndex>BY INDEX NAME</usingIndex>
+</PrimaryKey>
+</primaryKeys>
+<uniqueKeys>
+<UniqueKey class="oracle.dbtools.crest.model.design.storage.oracle.v10g.UniqueOraclev10g" name="UK_EMPLOYEE" id="7F18D389-79F5-FBC6-2410-E4F81D017C24">
+<createdBy>NSI</createdBy>
+<createdTime>2024-03-01 12:37:22 UTC</createdTime>
+<ownerDesignName>relation</ownerDesignName>
+<segment>67F8F2EF-06BC-9A4B-7077-D04C11C77605</segment>
+<tableSpace>52911C5A-7FC6-4DDC-FE5F-A09CF191E4CB</tableSpace>
+<existingIndex>B0363BEA-2077-1501-3E4B-2EF9D3D6ABF3</existingIndex>
+<indexSegment>67F8F2EF-06BC-9A4B-7077-D04C11C77605</indexSegment>
+<indexSort>SORTED</indexSort>
+<usingIndex>BY INDEX NAME</usingIndex>
+</UniqueKey>
+</uniqueKeys>
+</TableProxyOraclev11g>
