@@ -1,0 +1,360 @@
+{
+  "info": {
+    "name": "Boutique Artisanale — Tests complets v2",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+
+    {
+      "name": "━━━ SETUP ━━━",
+      "item": [
+        {
+          "name": "01 — Health check",
+          "request": { "method": "GET", "url": "http://localhost:8000/health" }
+        },
+        {
+          "name": "02 — Upload CSV",
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/upload-csv",
+            "body": { "mode": "formdata", "formdata": [{"key":"file","type":"file"}] }
+          }
+        },
+        {
+          "name": "03 — Voir produits indexés",
+          "request": { "method": "GET", "url": "http://localhost:8000/produits" }
+        }
+      ]
+    },
+
+    {
+      "name": "━━━ GROUPE A : Messages simples — PAS de RAG ━━━",
+      "item": [
+        {
+          "name": "A1 — Bonjour",
+          "event": [{"listen":"test","script":{"exec":["pm.test('simple + pas RAG', function(){ var r=pm.response.json(); pm.expect(r.intention).to.eql('simple'); pm.expect(r.rag_utilise).to.eql(false); pm.expect(r.produits_rag.length).to.eql(0); });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"A1\",\n  \"message\": \"Bonjour\"\n}"}
+          }
+        },
+        {
+          "name": "A2 — Salut",
+          "event": [{"listen":"test","script":{"exec":["pm.test('simple', function(){ pm.expect(pm.response.json().intention).to.eql('simple'); pm.expect(pm.response.json().rag_utilise).to.eql(false); });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"A2\",\n  \"message\": \"Salut\"\n}"}
+          }
+        },
+        {
+          "name": "A3 — Merci",
+          "event": [{"listen":"test","script":{"exec":["pm.test('simple', function(){ pm.expect(pm.response.json().intention).to.eql('simple'); pm.expect(pm.response.json().rag_utilise).to.eql(false); });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"A3\",\n  \"message\": \"Merci beaucoup\"\n}"}
+          }
+        },
+        {
+          "name": "A4 — Au revoir",
+          "event": [{"listen":"test","script":{"exec":["pm.test('simple', function(){ pm.expect(pm.response.json().intention).to.eql('simple'); pm.expect(pm.response.json().rag_utilise).to.eql(false); });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"A4\",\n  \"message\": \"Au revoir\"\n}"}
+          }
+        },
+        {
+          "name": "A5 — Vous livrez en Tunisie ?",
+          "event": [{"listen":"test","script":{"exec":["pm.test('simple + pas RAG', function(){ pm.expect(pm.response.json().rag_utilise).to.eql(false); });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"A5\",\n  \"message\": \"Vous livrez en Tunisie ?\"\n}"}
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "━━━ GROUPE B : Budget dans le message — RAG + filtre prix ━━━",
+      "item": [
+        {
+          "name": "B1 — donner moin un produit de 30dt ← CAS PROBLÈME CORRIGÉ",
+          "event": [{"listen":"test","script":{"exec":["pm.test('reco + RAG + budget 30', function(){ var r=pm.response.json(); pm.expect(r.intention).to.eql('recommandation'); pm.expect(r.rag_utilise).to.eql(true); pm.expect(r.produit_recommande).to.not.be.null; if(r.prix_recommande > 0) pm.expect(r.prix_recommande).to.be.at.most(30); });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"B1\",\n  \"message\": \"donner moin un produit de 30dt\"\n}"}
+          }
+        },
+        {
+          "name": "B2 — je veux quelque chose à moins de 50 DT",
+          "event": [{"listen":"test","script":{"exec":["pm.test('reco + RAG', function(){ var r=pm.response.json(); pm.expect(r.intention).to.eql('recommandation'); pm.expect(r.rag_utilise).to.eql(true); });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"B2\",\n  \"message\": \"je veux quelque chose à moins de 50 DT\"\n}"}
+          }
+        },
+        {
+          "name": "B3 — budget 100dt cadeau mariage",
+          "event": [{"listen":"test","script":{"exec":["pm.test('reco + RAG + budget 100', function(){ var r=pm.response.json(); pm.expect(r.intention).to.eql('recommandation'); pm.expect(r.rag_utilise).to.eql(true); pm.expect(r.produit_recommande).to.not.be.null; });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"B3\",\n  \"message\": \"budget 100dt cadeau mariage\"\n}"}
+          }
+        },
+        {
+          "name": "B4 — t'as quoi entre 20 et 40 DT ?",
+          "event": [{"listen":"test","script":{"exec":["pm.test('reco + RAG', function(){ pm.expect(pm.response.json().intention).to.eql('recommandation'); pm.expect(pm.response.json().rag_utilise).to.eql(true); });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"B4\",\n  \"message\": \"t'as quoi entre 20 et 40 DT ?\"\n}"}
+          }
+        },
+        {
+          "name": "B5 — montre moi quelque chose pas cher",
+          "event": [{"listen":"test","script":{"exec":["pm.test('reco + RAG', function(){ pm.expect(pm.response.json().intention).to.eql('recommandation'); pm.expect(pm.response.json().rag_utilise).to.eql(true); });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"B5\",\n  \"message\": \"montre moi quelque chose pas cher\"\n}"}
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "━━━ GROUPE C : Recommandation directe — RAG immédiat ━━━",
+      "item": [
+        {
+          "name": "C1 — cadeau céramique pour ma mère",
+          "event": [{"listen":"test","script":{"exec":["pm.test('reco directe', function(){ var r=pm.response.json(); pm.expect(r.intention).to.eql('recommandation'); pm.expect(r.rag_utilise).to.eql(true); pm.expect(r.produit_recommande).to.not.be.null; pm.expect(r.response).to.include('DT'); });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"C1\",\n  \"message\": \"je veux un cadeau en céramique pour ma mère\"\n}"}
+          }
+        },
+        {
+          "name": "C2 — objet déco salon",
+          "event": [{"listen":"test","script":{"exec":["pm.test('reco directe', function(){ var r=pm.response.json(); pm.expect(r.intention).to.eql('recommandation'); pm.expect(r.rag_utilise).to.eql(true); });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"C2\",\n  \"message\": \"je cherche un objet pour décorer mon salon\"\n}"}
+          }
+        },
+        {
+          "name": "C3 — vous avez du bois d'olivier ?",
+          "event": [{"listen":"test","script":{"exec":["pm.test('reco directe', function(){ pm.expect(pm.response.json().rag_utilise).to.eql(true); });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"C3\",\n  \"message\": \"vous avez des objets en bois d'olivier ?\"\n}"}
+          }
+        },
+        {
+          "name": "C4 — cadeau anniversaire femme",
+          "event": [{"listen":"test","script":{"exec":["pm.test('reco directe', function(){ pm.expect(pm.response.json().intention).to.eql('recommandation'); pm.expect(pm.response.json().rag_utilise).to.eql(true); });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"C4\",\n  \"message\": \"cadeau anniversaire pour ma femme\"\n}"}
+          }
+        },
+        {
+          "name": "C5 — quelque chose de traditionnel tunisien",
+          "event": [{"listen":"test","script":{"exec":["pm.test('reco directe', function(){ pm.expect(pm.response.json().intention).to.eql('recommandation'); pm.expect(pm.response.json().rag_utilise).to.eql(true); });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"C5\",\n  \"message\": \"je veux quelque chose de traditionnel tunisien\"\n}"}
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "━━━ GROUPE D : Question d'abord puis RAG ━━━",
+      "item": [
+        {
+          "name": "D1 — besoin vague (question attendue)",
+          "event": [{"listen":"test","script":{"exec":["pm.test('question posée sans RAG', function(){ var r=pm.response.json(); pm.expect(r.action).to.eql('question'); pm.expect(r.rag_utilise).to.eql(false); pm.expect(r.produit_recommande).to.be.null; });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"D1\",\n  \"message\": \"je cherche quelque chose de beau\"\n}"}
+          }
+        },
+        {
+          "name": "D2 — réponse → RAG déclenché",
+          "event": [{"listen":"test","script":{"exec":["pm.test('reco avec RAG', function(){ var r=pm.response.json(); pm.expect(r.intention).to.eql('recommandation'); pm.expect(r.rag_utilise).to.eql(true); pm.expect(r.produit_recommande).to.not.be.null; pm.expect(r.response).to.include('DT'); });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"D1\",\n  \"message\": \"c'est pour offrir à ma mère pour son anniversaire\"\n}"}
+          }
+        },
+        {
+          "name": "D3 — vérifier profil accumulé",
+          "request": {
+            "method": "GET", "url": "http://localhost:8000/session/D1"
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "━━━ GROUPE E : SAV — PAS de RAG ━━━",
+      "item": [
+        {
+          "name": "E1 — commande cassée",
+          "event": [{"listen":"test","script":{"exec":["pm.test('SAV sans RAG', function(){ var r=pm.response.json(); pm.expect(r.intention).to.eql('sav'); pm.expect(r.rag_utilise).to.eql(false); pm.expect(r.produits_rag.length).to.eql(0); });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"E1\",\n  \"message\": \"ma commande est arrivée cassée\"\n}"}
+          }
+        },
+        {
+          "name": "E2 — livraison pas arrivée",
+          "event": [{"listen":"test","script":{"exec":["pm.test('SAV sans RAG', function(){ pm.expect(pm.response.json().intention).to.eql('sav'); pm.expect(pm.response.json().rag_utilise).to.eql(false); });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"E2\",\n  \"message\": \"ma livraison n'est pas arrivée depuis 2 semaines\"\n}"}
+          }
+        },
+        {
+          "name": "E3 — créer ticket contact",
+          "event": [{"listen":"test","script":{"exec":["pm.test('ticket créé', function(){ var r=pm.response.json(); pm.expect(r.success).to.eql(true); pm.expect(r.ticket.ticket_id).to.include('CMD-'); });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/contact",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"E1\",\n  \"nom\": \"Ahmed Ben Ali\",\n  \"email\": \"ahmed@gmail.com\",\n  \"telephone\": \"+216 55 123 456\"\n}"}
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "━━━ GROUPE F : Cas limites et mixtes ━━━",
+      "item": [
+        {
+          "name": "F1 — Message en arabe tunisien",
+          "event": [{"listen":"test","script":{"exec":["pm.test('200 OK', function(){ pm.expect(pm.response.code).to.eql(200); pm.expect(pm.response.json().response).to.not.be.empty; });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"F1\",\n  \"message\": \"3andi marti theb cadeau mriguel\"\n}"}
+          }
+        },
+        {
+          "name": "F2 — Message mixte arabe/français",
+          "event": [{"listen":"test","script":{"exec":["pm.test('200 OK', function(){ pm.expect(pm.response.code).to.eql(200); });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"F2\",\n  \"message\": \"bghit cadeau for my mother, budget 50\"\n}"}
+          }
+        },
+        {
+          "name": "F3 — Message très court avec nombre",
+          "event": [{"listen":"test","script":{"exec":["pm.test('reco car nombre', function(){ pm.expect(pm.response.json().intention).to.eql('recommandation'); pm.expect(pm.response.json().rag_utilise).to.eql(true); });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"F3\",\n  \"message\": \"30 DT\"\n}"}
+          }
+        },
+        {
+          "name": "F4 — Message avec fautes d'orthographe",
+          "event": [{"listen":"test","script":{"exec":["pm.test('200 OK', function(){ pm.expect(pm.response.code).to.eql(200); pm.expect(pm.response.json().response).to.not.be.empty; });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"F4\",\n  \"message\": \"je veu un cadeaux pour ofrir a ma mere\"\n}"}
+          }
+        },
+        {
+          "name": "F5 — Prix = 0 dans les résultats RAG",
+          "event": [{"listen":"test","script":{"exec":["pm.test('prix recommandé > 0', function(){ var r=pm.response.json(); if(r.prix_recommande !== null && r.prix_recommande !== undefined){ pm.expect(r.prix_recommande).to.be.at.least(0); } });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"F5\",\n  \"message\": \"je cherche un cadeau artisanal\"\n}"}
+          }
+        },
+        {
+          "name": "F6 — Budget trop bas (rien en stock)",
+          "event": [{"listen":"test","script":{"exec":["pm.test('200 OK même sans résultat', function(){ pm.expect(pm.response.code).to.eql(200); pm.expect(pm.response.json().response).to.not.be.empty; });"]}}],
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"F6\",\n  \"message\": \"donne moi quelque chose à 1 DT\",\n  \"budget_max\": 1\n}"}
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "━━━ GROUPE G : Démo jury — scénario complet ━━━",
+      "item": [
+        {
+          "name": "G1 — Prospect arrive",
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"demo\",\n  \"message\": \"Bonjour\"\n}"}
+          }
+        },
+        {
+          "name": "G2 — Exprime besoin vague",
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"demo\",\n  \"message\": \"je cherche quelque chose de joli\"\n}"}
+          }
+        },
+        {
+          "name": "G3 — Précise le contexte + budget",
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"demo\",\n  \"message\": \"cadeau pour ma mère, budget 40 DT\",\n  \"budget_max\": 40\n}"}
+          }
+        },
+        {
+          "name": "G4 — Intéressé",
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/chat",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"demo\",\n  \"message\": \"c'est parfait, comment commander ?\"\n}"}
+          }
+        },
+        {
+          "name": "G5 — Créer lead",
+          "request": {
+            "method": "POST", "url": "http://localhost:8000/contact",
+            "header": [{"key":"Content-Type","value":"application/json"}],
+            "body": {"mode":"raw","raw":"{\n  \"session_id\": \"demo\",\n  \"nom\": \"Fatma Trabelsi\",\n  \"email\": \"fatma@gmail.com\",\n  \"telephone\": \"+216 22 345 678\"\n}"}
+          }
+        },
+        {
+          "name": "G6 — Voir tout l'historique",
+          "request": { "method": "GET", "url": "http://localhost:8000/session/demo" }
+        },
+        {
+          "name": "G7 — Reset pour relancer démo",
+          "request": { "method": "DELETE", "url": "http://localhost:8000/session/demo" }
+        }
+      ]
+    }
+
+  ]
+}

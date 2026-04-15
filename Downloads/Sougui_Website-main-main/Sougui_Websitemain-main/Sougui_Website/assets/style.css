@@ -1,0 +1,80 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg: #0d0b08;
+  --surface: #16130e;
+  --surface2: #1e1a14;
+  --gold: #c9a84c;
+  --gold-light: #e4c875;
+  --gold-dim: #7a5e28;
+  --copper: #b87333;
+  --cream: #f5ede0;
+  --text: #e8dcc8;
+  --text-dim: #8a7a62;
+  --border: rgba(201,168,76,0.18);
+  --red: #e05555;
+  --green: #5ec48a;
+  --blue: #5b9bd5;
+  --radius: 14px;
+}
+
+/* Global Streamlit Overrides */
+.stApp {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+}
+
+[data-testid="stSidebar"] {
+    background-color: var(--surface);
+    border-right: 1px solid var(--border);
+}
+
+.stMetric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+}
+
+/* KPI Cards */
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 24px;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.kpi-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 5px; }
+.kpi-value { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--gold); }
+.kpi-unit { font-size: 12px; color: var(--text-dim); }
+
+/* Insight Banner */
+.insight-banner {
+  background: linear-gradient(135deg, rgba(201,168,76,0.12), rgba(184,115,51,0.08));
+  border: 1px solid rgba(201,168,76,0.3);
+  border-radius: var(--radius);
+  padding: 18px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.insight-icon { font-size: 24px; }
+.insight-text { font-size: 14px; color: var(--text); }
+.insight-text strong { color: var(--gold); }
+
+/* Custom Headings */
+h1, h2, h3 {
+    font-family: 'Playfair Display', serif !important;
+    color: var(--cream) !important;
+}
+
+/* Chatbot Bubbles */
+.stChatMessage {
+    border-radius: var(--radius);
+}
