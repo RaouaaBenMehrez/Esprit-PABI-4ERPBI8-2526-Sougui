@@ -1,0 +1,47 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+@theme {
+  --color-sougui-bg: #fcfbf9;
+  --color-sougui-surface: #ffffff;
+  --color-sougui-surface-light: #f3f4f6;
+  --color-sougui-gold: #c9a84c;
+  --color-sougui-gold-light: #e4c875;
+  --color-sougui-gold-dim: #7a5e28;
+  --color-sougui-copper: #b87333;
+  --color-sougui-cream: #1a1a1a;
+  --color-sougui-text: #1a1a1a;
+  --color-sougui-text-dim: #6b7280;
+  
+  --font-serif: "Playfair Display", serif;
+  --font-sans: "DM Sans", sans-serif;
+  
+  --radius-sougui: 14px;
+}
+
+body {
+  @apply bg-sougui-bg text-sougui-text font-sans antialiased;
+  margin: 0;
+  min-height: 100vh;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(201,168,76,0.2);
+  border-radius: 9999px;
+}
+
+.premium-card {
+  @apply bg-sougui-surface border border-white/5 rounded-sougui transition-all duration-300 hover:border-sougui-gold/30;
+}
+
+.gold-gradient {
+  @apply bg-gradient-to-br from-sougui-gold to-sougui-copper;
+}
