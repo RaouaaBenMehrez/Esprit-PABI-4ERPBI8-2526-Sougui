@@ -1,0 +1,135 @@
+"Produit_key","Code_Produit","Nom_Produit","Categorie","Sous_Categorie","Matiere","Prix_Vente_HT","Prix_Promo","En_Stock","Publie_Web"
+1," TSC-ART-001","Magnet Fridge en bois d'olivierCollection Émotion – Tasses & Soucoupes Artisanales","Non catalogué","","Autre","0","0",False,False
+2,"AGM-001-LIB","Agrafeuse Maped","Non catalogué","","Autre","0","0",False,False
+3,"AS-001-MF","Abonnement annuel salle de sport","Non catalogué","","Autre","0","0",False,False
+4,"BA","Bon d'achat de 100dt","Non catalogué","","Autre","0","0",False,False
+5,"BB-001-FP","Boudha en béton noir","Déco","Sculptures","Autre","44","0",False,False
+6,"BB-002-FP","Boudha en béton doré","Non catalogué","","Autre","0","0",False,False
+7,"BC-001-RL","Boîte en céramique avec calligraphie arabe bleue","Non catalogué","","Bois Olivier","0","0",False,False
+8,"BC-002-RL","Boîte rectangulaire en céramique avec couvercle décoré de motifs géométriques","Arts de la table","Céramiques","Bois Olivier","15","0",False,False
+9,"BC-003-RL","Boîte en céramique avec calligraphie arabe bleue 2","Arts de la table","Céramiques","Bois Olivier","15","0",False,False
+10,"BC-004-RL","Boîte carré en céramique avec couvercle décoré de motifs géométriques","Arts de la table, Shop","Arts de la table","Bois Olivier","0","0",False,False
+11,"BC-005-RL","Boîte en céramique ronde OTTOMAN","Arts de la table","Céramiques","Bois Olivier","15","0",False,False
+12,"BCL-001-RL","Bouteille en céramique décorée avec bouchon en liège","Arts de la table, Shop","Arts de la table","Bois Olivier","0","0",False,False
+13,"BCL-002-RL","Bouteille en Céramique à Motifs Andalous","Arts de la table","Céramiques","Bois Olivier","20","0",False,False
+14,"BCL-003-RL","Bouteille en Céramique à Motifs Andalous 2","Non catalogué","","Bois Olivier","0","0",False,False
+15,"BCL-004-RL","Bouteille en Céramique à Motif VISAGE ","Non catalogué","","Bois Olivier","0","0",False,False
+16,"BCL-005-RL","Bouteille en Céramique à Motif Calligraphie 1","Non catalogué","","Bois Olivier","0","0",False,False
+17,"BCL-006-RL","Bouteille en Céramique à Motif Fleurs","Non catalogué","","Bois Olivier","0","0",False,False
+18,"BCM-001-KB","Bonbonniére Cuivre martelé 1","Arts de la table","Cuivres","Cuivre","80","0",False,False
+19,"BP-001-SO","Bougie Parfumée Sougui","Non catalogué","","Bois","0","0",False,False
+20,"BPB-001-FP","Bougie Piccolo en béton","Non catalogué","","Autre","0","0",False,False
+21,"BVC-001-KB","Boîte en verre avec couvercle en cuivre martelé","Arts de la table","Cuivres, Shop","Cuivre","65","0",False,False
+22,"BVC-002-SO","Bonbonnières en verre soufflé & cuivre martelé","Arts de la table","Cuivres, Shop","Bois","0","0",False,False
+23,"CCL-001-RL","Cruche en céramique circulaire avec motifs andalous jaunes et bleus","Arts de la table","Céramiques","Bois Olivier","20","0",False,False
+24,"CFA-001-SO","Coffret Flamme d’artisan – Jasmin Noir ou Silex","Non catalogué","","Bois","85","49.9",False,False
+25,"CFV-001-MHN","Grande Corbeille en fibre végétale","Non catalogué","","Autre","0","0",False,False
+26,"CFV-002-MHN","Peti corbeille en fibre végétale","Non catalogué","","Autre","0","0",False,False
+27,"CGO-001-2M","Carafe et 6 Gobelets « Olivéa » en Grès – Élégance Naturelle et Authentique","Arts de la table","Service de Table","Autre","99","90",False,False
+28,"CGS-001-2M","Carafe et 6 Gobelets « Séa » en Grès – Élégance Naturelle et Authentique","Arts de la table","Service de Table","Autre","99","90",False,False
+29,"CGS-002-2M","Carafe et 6 Gobelets « Séli » en Grès – Élégance Naturelle et Authentique","Arts de la table","Service de Table","Autre","99","90",False,False
+30,"COU-CUIR-FOUTA-002","Couffin artisanal en fibre végétale – Anses cuir & fouta offerte","Couffins & Foutas, Shop","Gifts","Autre","90","0",False,False
+31,"CVC-001-KB","Carafe « el bey » en verre et cuivre martelé","Arts de la table","Cuivres, Shop","Cuivre","125","0",False,False
+32,"CVC-003-OD","Carafe Magon  en verre craquelé","Non catalogué","","Autre","0","0",False,False
+33,"CVD-001-OD","Carafe Didon en verre craquelé","Arts de la table, Shop","Arts de la table","Autre","0","0",False,False
+34,"CVT-001-OD","Carafe Tanit en verre craquelé","Non catalogué","","Autre","0","0",False,False
+35,"DBO-001-2M","Duo de Bouteilles avec Support « Olivéa » en Grès","Non catalogué","","Autre","0","0",False,False
+36,"DS-001-SO","Diffuseur Sougui","Non catalogué","","Bois","0","0",False,False
+37,"DV-001-RES","Duo Vase Noir","Non catalogué","","Autre","0","0",False,False
+38,"DV-002-RES","Duo Vase Beige","Non catalogué","","Autre","0","0",False,False
+39,"E4B-001-BF","Etagére 4 boitiers bois d'olivier medina épices","Arts de la table, Shop","Arts de la table","Autre","90","0",False,False
+40,"ED-001-RES","Ensemble décoratif en résine gris","Déco","Vases","Autre","35","0",False,False
+41,"ED-002-RES","Ensemble décoratif en résine Beige","Déco","Vases","Autre","45","0",False,False
+42,"ED-003-RES","Ensemble décoratif en résine Gris + doré","Déco","Sculptures, Shop","Autre","45","0",False,False
+43,"ED-004-RES","Ensemble décoratif en résine gris marbré","Déco","Vases","Autre","50","0",False,False
+44,"ED-005-RES","Ensemble décoratif grand modèle","Déco","Sculptures, Shop","Autre","98","90",False,False
+45,"FAV-001-OD","Set « Flûtes d’Azur » – 6 flûtes en verre soufflé craquelé","Non catalogué","","Autre","0","0",False,False
+46,"FOT-COT","Fouta artisanale en coton – 2m x 1m – Couleurs au choix","Non catalogué","","Autre","0","0",False,False
+47,"GML-001-LR","Mouton taille Grande en laine ","Non catalogué","","Autre","0","0",False,False
+48,"JAV-001-SS","Action Vérité Bitounsi – Jeu D’ambiance","Non catalogué","","Autre","0","0",False,False
+49,"JAV-002-SS","Action Vérité Bitounsi + 108 Extra Cartes – Jeu D’ambiance","Non catalogué","","Autre","0","0",False,False
+50,"JB-001-SS","Jeu el Bandi","Non catalogué","","Autre","0","0",False,False
+51,"JEB-001-BF","Jeu d'échecs petit modèle en bois d'olivier","Non catalogué","","Autre","0","0",False,False
+52,"JEB-002-BF","Jeu d'échecs grand modèle en bois d'olivier","Non catalogué","","Autre","0","0",False,False
+53,"JLG-001-SS","Jeu Loup Garou","Non catalogué","","Autre","0","0",False,False
+54,"JM-001-SS","Jeu Mimes","Non catalogué","","Autre","0","0",False,False
+55,"LB-001-FP","Lampe en béton brut forme G","Déco","Luminaires","Autre","99","84",False,False
+56,"LIV-P","Livraison Particulier","Non catalogué","","Autre","0","0",False,False
+57,"LMH-HA","Location maison d'hotes","Non catalogué","","Autre","0","0",False,False
+58,"LPC-001-KB","Lance parfum cuivre martelé 1","Arts de la table","Cuivres","Cuivre","40","0",False,False
+59,"MC-001-KB","Mathred Cuivre martelé 1","Arts de la table","Cuivres","Cuivre","34","0",False,False
+60,"MC-001-RL","Mug en céramique minimaliste","Arts de la table","Céramiques","Bois Olivier","15","0",False,False
+61,"MCM-001-KB","Mug en cuivre martelé","Non catalogué","","Cuivre","0","0",False,False
+62,"MFB-001-BF","Magnet Fridge en bois d'olivier","Non catalogué","","Autre","0","0",False,False
+63,"MML-001-LR","Mouton taille moyenne en laine ","Non catalogué","","Autre","0","0",False,False
+64,"MUG-BOH","Mug Bohème en céramique artisanale – Avec sous-tasse","Arts de la table","Céramiques, Shop","Autre","0","0",False,False
+65,"NBK-001-OSL","Jeu Nes Bekri Kalou","Jeux","","Autre","30","0",False,False
+66,"P-00002","Remplissage 7 ( cire )","Non catalogué","","Autre","0","0",False,False
+67,"PAC-001-RL","Pack Andalous en Céramique – Élégance et Tradition","Arts de la table","Céramiques","Bois Olivier","105","92",False,False
+68,"PC-001-RL","Planche céramique calligraphie bleue","Arts de la table, Shop","Arts de la table","Bois Olivier","20","0",False,False
+69,"PC-002-RL","Planche céramique Andalous","Arts de la table","Céramiques","Bois Olivier","15","0",False,False
+70,"PC-003-RL","Planche céramique OTTOMAN","Arts de la table","Céramiques","Bois Olivier","15","0",False,False
+71,"PC-004-RL","Planche céramique calligraphie motif formes géométriques bleu","Non catalogué","","Bois Olivier","0","0",False,False
+72,"PC-005-RL","Planche céramique calligraphie noire","Non catalogué","","Bois Olivier","0","0",False,False
+73,"PCB-001-BF","Plateau en céramique bois d'olivier mosaique d'olive 30*20","Arts de la table, Shop","Arts de la table","Autre","0","0",False,False
+74,"PCB-002-BF","Plateau en céramique bois d'olivier mosaique d'olive 30*10","Non catalogué","","Autre","90","80",False,False
+75,"PCB-003-BF","Plateau en céramique bois d'olivier mosaique d'olive 20*10","Non catalogué","","Autre","90","80",False,False
+76,"PCB-004-BF","Plateau en céramique bois d'olivier mosaique d'olive 20*20","Non catalogué","","Autre","0","0",False,False
+77,"PCC-001-KER","Pack  saint valentin cœur à coeur : planche + tasse","Arts de la table","Céramiques, Shop","Autre","25","0",False,False
+78,"PCM-001-KB","Plateau rond en métal martelé (25cm)","Arts de la table","Cuivres","Cuivre","85","0",False,False
+79,"PCM-002-KB","Plateau rond profond en cuivre martelé (34cm)","Arts de la table","Cuivres","Cuivre","115","0",False,False
+80,"PDE-001-KER","Pack  saint valentin duo envoutant : planche + tasse","Arts de la table","Céramiques, Shop","Autre","30","0",False,False
+81,"PMC-001-KER","Pack saint valentin Mots du coeur : 2 tasses + 2 st + plateau)","Arts de la table","Céramiques, Shop","Autre","55","50",False,False
+82,"PML-001-LR","Petit mouton en Laine ","Non catalogué","","Autre","0","0",False,False
+83,"POB-001-BF","Porte clé Chachia en bois d'olivier","Non catalogué","","Autre","0","0",False,False
+84,"POC-001-RL","Pack Ottoman en Céramique – Élégance et Artisanat","Arts de la table","Céramiques","Bois Olivier","97","92",False,False
+85,"PSC-001-RL","Porte-serviettes en céramique décoré fleurs","Arts de la table","Céramiques","Bois Olivier","17","0",False,False
+86,"PSC-002-RL","Porte-serviettes en céramique décoré andalous","Non catalogué","","Bois Olivier","0","0",False,False
+87,"Papier A3 350 G","Papier A3 350 G","Non catalogué","","Autre","0","0",False,False
+88,"RAG-001-LIB","Recharge Agrafeuse","Non catalogué","","Autre","0","0",False,False
+89,"RP-001-LIB","Rame papier multi office","Non catalogué","","Autre","0","0",False,False
+90,"SA-001-NA","Set de TABLE « Astéria »","Arts de la table","Céramiques, Shop","Céramique","0","0",False,False
+91,"SCA-001-RL","Set Calligraphie Arabe – Cruche, Sous-Plat & Planche en Céramique","Arts de la table","Céramiques","Bois Olivier","50","0",False,False
+92,"SCC-001-KB","Service à Café Oriental en Métal Martelé avec Plateau","Arts de la table","Cuivres","Cuivre","0","0",False,False
+93,"SCO-ELY","Couffin artisanal en fibre végétale – Elyssa","Non catalogué","","Autre","0","0",False,False
+94,"SDB-PPH","Collection Sidi Bou – Photophores artisanaux en cire parfumée","Non catalogué","","Autre","0","0",False,False
+95,"SGE-001-NA","Set Gourmet l'éveil céramique Vet d'eau","Non catalogué","","Céramique","0","0",False,False
+96,"SGE-002-NA","Set Gourmet l'éveil céramique Bleu Gris","Non catalogué","","Céramique","0","0",False,False
+97,"SGE-003-NA","Set Gourmet l'éveil céramique Terracotta","Non catalogué","","Céramique","0","0",False,False
+98,"SMB-001-FP","Série Moai en béton","Déco","Sculptures","Autre","130","0",False,False
+99,"SO-001-NA","Set de TABLE « Organica »","Non catalogué","","Céramique","0","0",False,False
+100,"SOV-001-NA","Set de TABLE « olivéa » en grès ","Non catalogué","","Céramique","0","0",False,False
+101,"SPR-001-RL","Sous plat rond Calligraphie bleue","Arts de la table, Shop","Arts de la table","Bois Olivier","20","0",False,False
+102,"SPR-002-RL","Sous plat rond Calligraphie Noire","Non catalogué","","Bois Olivier","0","0",False,False
+103,"SPR-003-RL","Sous plat rond Andalous","Arts de la table","Céramiques","Bois Olivier","20","0",False,False
+104,"SPR-004-RL","Sous plat rond Formes géométriques","Non catalogué","","Bois Olivier","0","0",False,False
+105,"SPR-005-RL","Sous plat rond fleurs colorés","Arts de la table","Céramiques","Bois Olivier","15","0",False,False
+106,"SRO-001-RL","Set Royal ottomans – Élégance Artisanale (8 Pièces)","Arts de la table","Céramiques","Bois Olivier","137","120",False,False
+107,"SSB-001-2M","Set « Séa » en Grès Blanc Moucheté","Non catalogué","","Autre","0","0",False,False
+108,"SSN-001-2M","Set « Séli » en Grès Noirs","Non catalogué","","Autre","0","0",False,False
+109,"STB-001-BF","Sous tasse céramique bois d'olivier","Arts de la table, Shop","Arts de la table","Autre","0","0",False,False
+110,"STC-001-KB","Service à Thé Martelé avec Plateau – Théière et Verres","Arts de la table","Cuivres","Cuivre","0","0",False,False
+111,"Salaire Mensuel","Salaire Mensuel ","Non catalogué","","Autre","0","0",False,False
+112,"Shooting","Shooting produits","Non catalogué","","Autre","0","0",False,False
+113,"TB-001-FP","Tortue Noir en béton","Non catalogué","","Autre","0","0",False,False
+114,"TB-002-FP","Tortue doré en beton","Non catalogué","","Autre","0","0",False,False
+115,"TBC-001-RL","Trio bougies céramique rouge décoré ","Non catalogué","","Bois Olivier","90","0",False,False
+116,"TBT-001-SS","Jeu talla3 b tounsi ","Non catalogué","","Autre","0","0",False,False
+117,"TCC-001-KB","Tasse à café avec support en cuivre martelé et soucoupe","Arts de la table","Cuivres","Cuivre","30","0",False,False
+118,"TCM-001-KB","Théière en cuivre martelé","Arts de la table","Cuivres","Cuivre","90","0",False,False
+119,"Transport","Transport marchnadise Sfax tunis ( béton)","Non catalogué","","Autre","0","0",False,False
+120,"VB-001-RES","Vase Beige en U","Non catalogué","","Autre","0","0",False,False
+121,"VB-002-RES","Vase Beige triangle","Non catalogué","","Autre","0","0",False,False
+122,"VC-001-RL","Vase en céramique avec motifs de poissons colorés- Samak","Arts de la table","Céramiques, Shop","Bois Olivier","35","0",False,False
+123,"VC-002-RL","Ensemble de vases en céramique avec motifs berbères","Non catalogué","","Bois Olivier","0","0",False,False
+124,"VL-001-MHN","Veilleuse de lit en fibre végétale","Non catalogué","","Autre","0","0",False,False
+125,"VTC-001-KB","Verre de thé avec base en cuivre","Arts de la table","Cuivres","Cuivre","16.5","0",False,False
+126,"VV-001-RES","Grand Vase visage en résine","Déco","Vases","Autre","35","0",False,False
+127,"VVC-001-OD","Verre en verre craquelé type 1 didon","Non catalogué","","Autre","0","0",False,False
+128,"VVC-001-SMC","Verre à vin en cuivre","Non catalogué","","Autre","0","0",False,False
+129,"VVC-002-OD","Verre en verre craquelé type 2 Chope","Non catalogué","","Autre","0","0",False,False
+130,"VVC-003-OD","Verre en verre craquelé type 3 flute avec base","Non catalogué","","Autre","0","0",False,False
+131,"VVC-004-OD","Verre en verre craquelé type 4 a pied tp12b","Non catalogué","","Autre","0","0",False,False
+132,"VVC-005-OD","Verre en verre craquelé type 5 a pied tige long","Non catalogué","","Autre","0","0",False,False
+133,"ZCL-001-KB","Zazoua Cuivre martelé manche en laiton 1","Arts de la table","Cuivres","Cuivre","34","0",False,False
+134,"ZCL-002-KB","Zazoua Cuivre martelé manche en laiton 2","Arts de la table","Cuivres","Cuivre","45","0",False,False

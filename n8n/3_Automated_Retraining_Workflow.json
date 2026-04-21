@@ -1,0 +1,157 @@
+{
+  "name": "3_Automated_Retraining_Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "months",
+              "triggerAtDayOfMonth": 1,
+              "triggerAtHour": 2
+            }
+          ]
+        }
+      },
+      "id": "1",
+      "name": "Cron_Trigger_Mensuel",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ],
+      "notesInFlow": true,
+      "notes": "Déclenche le réentraînement ML (1er du mois à 2h00)"
+    },
+    {
+      "parameters": {
+        "command": "cd /app && python scripts/retrain_models.py"
+      },
+      "id": "2",
+      "name": "Machine_Learning_Retraining",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        400,
+        300
+      ],
+      "notesInFlow": true,
+      "notes": "Exécution d'un script Python (via Docker / local) gérant les .pkl",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.exitCode}}",
+              "value2": "0"
+            }
+          ]
+        }
+      },
+      "id": "3",
+      "name": "If_Success_Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        600,
+        300
+      ],
+      "notesInFlow": true,
+      "notes": "Vérifie le code de sortie Python (0 = Succès)"
+    },
+    {
+      "parameters": {
+        "channel": "ml-updates",
+        "text": "=[SUCCÈS ML] Les modèles ont été ré-entraînés avec succès.\nLogs: ```{{$json.stdout}}```"
+      },
+      "id": "4",
+      "name": "Slack_Success_Notif",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        800,
+        200
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "slack_credential",
+          "name": "Slack account"
+        }
+      },
+      "notes": "Rapport des nouvelles métriques"
+    },
+    {
+      "parameters": {
+        "channel": "monitoring-alerts",
+        "text": "=[ERREUR ML] Le pipeline de réentraînement a échoué.\nErreur: ```{{$json.stderr}}```"
+      },
+      "id": "5",
+      "name": "Slack_Error_Notif",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        800,
+        400
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "slack_credential",
+          "name": "Slack account"
+        }
+      },
+      "notes": "Erreur d'entraînement ou Data Drift"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Cron_Trigger_Mensuel": {
+      "main": [
+        [
+          {
+            "node": "Machine_Learning_Retraining",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Machine_Learning_Retraining": {
+      "main": [
+        [
+          {
+            "node": "If_Success_Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If_Success_Check": {
+      "main": [
+        [
+          {
+            "node": "Slack_Success_Notif",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack_Error_Notif",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f781ea3a-7140-4eaa-a12b-d3fe8f9ab9e0",
+  "id": "v1-0-2"
+}

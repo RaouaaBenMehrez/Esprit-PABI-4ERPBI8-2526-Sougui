@@ -1,0 +1,75 @@
+# ─── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.spec
+
+# ─── Environnements virtuels ──────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+.Python
+
+# ─── Variables d'environnement (SECRETS) ─────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ─── Node.js / Frontend ───────────────────────────────────────────────────────
+node_modules/
+dist/
+.vite/
+*.local
+
+# ─── Bases de données ─────────────────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ─── Coverage & Tests ─────────────────────────────────────────────────────────
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# ─── IDEs & Éditeurs ──────────────────────────────────────────────────────────
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ─── Jupyter ──────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ─── Docker ───────────────────────────────────────────────────────────────────
+.dockerignore
+
+# ─── Chroma DB (base vectorielle locale) ─────────────────────────────────────
+ai-agent/chroma_db/
+
+# ─── Modèles ML (optionnel — gros fichiers, peut utiliser Git LFS) ────────────
+# models/*.pkl
+
+# ─── Fichiers temporaires ─────────────────────────────────────────────────────
+*.tmp
+*.bak
+*.swp

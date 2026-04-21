@@ -1,0 +1,5 @@
+"canal_key","code_canal","libelle_canal","type_canal","physique_ou_digital","source_fichier"
+1,"B2B_Facture","Vente directe entreprises","B2B","Digital","Vente_Facture.xlsx"
+2,"B2C_Web","E-commerce WooCommerce","B2C","Digital","Siteweb_Commandes_.xlsx"
+3,"B2C_PopupStore","Ventes physiques popup","B2C","Physique","Ventes_PopupStore.xlsx"
+4,"B2C_Foire","Foire de Sousse","B2C","Physique","Vente_Foire_sousse.xlsx"
