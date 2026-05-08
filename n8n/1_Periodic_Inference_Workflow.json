@@ -1,0 +1,170 @@
+{
+  "name": "1_Periodic_Inference_Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                0
+              ],
+              "triggerAtHour": 0
+            }
+          ]
+        }
+      },
+      "id": "1",
+      "name": "Cron_Trigger_Hebdomadaire",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ],
+      "notesInFlow": true,
+      "notes": "Déclenche l'inférence toutes les semaines"
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:5000/api/predict/ca",
+        "options": {}
+      },
+      "id": "2",
+      "name": "API_Flask_Prophet",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        450,
+        300
+      ],
+      "notesInFlow": true,
+      "notes": "Requête vers le modèle ML (Prophet CA)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const predictions = $input.item.json.predictions;\nreturn predictions.map(p => ({ json: p }));"
+      },
+      "id": "3",
+      "name": "Format_Predictions_Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ],
+      "notesInFlow": true,
+      "notes": "Transformation en liste pour stockage"
+    },
+    {
+      "parameters": {
+        "tableName": "predictions_ca",
+        "columns": "mois, prediction, min, max"
+      },
+      "id": "4",
+      "name": "PostgreSQL_Storage",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.1,
+      "position": [
+        850,
+        300
+      ],
+      "notesInFlow": true,
+      "notes": "Stockage base de données automatique",
+      "credentials": {
+        "postgres": {
+          "id": "sougui_db",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "5",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        250,
+        500
+      ],
+      "notesInFlow": true,
+      "notes": "Écoute les erreurs du workflow"
+    },
+    {
+      "parameters": {
+        "channel": "monitoring-alerts",
+        "text": "=[ALERTE ML] Échec du workflow d'inférence périodique.\nErreur: {{$json.execution.error.message}}\nNœud: {{$json.execution.error.node.name}}"
+      },
+      "id": "6",
+      "name": "Slack_Error_Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        450,
+        500
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "slack_credential",
+          "name": "Slack account"
+        }
+      },
+      "notes": "Notification automatisée"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Cron_Trigger_Hebdomadaire": {
+      "main": [
+        [
+          {
+            "node": "API_Flask_Prophet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "API_Flask_Prophet": {
+      "main": [
+        [
+          {
+            "node": "Format_Predictions_Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format_Predictions_Data": {
+      "main": [
+        [
+          {
+            "node": "PostgreSQL_Storage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Slack_Error_Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f781ea3a-7140-4eaa-a12b-d3fe8f9ab9e8",
+  "id": "v1-0-0"
+}

@@ -1,0 +1,13 @@
+# ─── dashboards.yml — Auto-provisioning Grafana Dashboard ────────────────────
+apiVersion: 1
+
+providers:
+  - name: "Sougui BI — MLOps"
+    orgId: 1
+    folder: "Sougui BI"
+    type: file
+    disableDeletion: false
+    editable: true
+    updateIntervalSeconds: 30
+    options:
+      path: /etc/grafana/provisioning/dashboards

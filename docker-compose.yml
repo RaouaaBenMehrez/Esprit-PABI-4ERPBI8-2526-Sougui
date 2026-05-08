@@ -1,0 +1,83 @@
+# ─── docker-compose.yml — Sougui BI Suite ────────────────────────────────────
+# Orchestre 3 services :
+#   1. backend  — Flask API (port 5000)
+#   2. frontend — Vite/React via Nginx (port 3000)
+#   3. mlflow   — Serveur de tracking MLflow (port 5001)
+#
+# Usage :
+#   docker compose up --build        # Premier lancement
+#   docker compose up -d             # Mode détaché (arrière-plan)
+#   docker compose logs -f backend   # Logs du backend
+#   docker compose down              # Arrêter tous les services
+
+version: "3.9"
+
+services:
+
+  # ── 1. Backend Flask ────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sougui-backend
+    ports:
+      - "5000:5000"
+    environment:
+      # PostgreSQL — modifier selon votre configuration
+      - PG_HOST=host.docker.internal   # Pointe vers PostgreSQL sur la machine hôte
+      - PG_PORT=5432
+      - PG_DB=sougui_db
+      - PG_USER=postgres
+      - PG_PASSWORD=postgres
+      # MLflow
+      - MLFLOW_TRACKING_URI=http://mlflow:5001
+      # Flask
+      - FLASK_ENV=production
+    volumes:
+      # Volume partagé pour les modèles ML (persistance entre redémarrages)
+      - ./models:/app/../models
+      # Volume pour les runs MLflow
+      - ./backend/mlruns:/app/mlruns
+    depends_on:
+      - mlflow
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ── 2. Frontend React/Vite (Nginx) ─────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sougui-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # ── 3. MLflow Tracking Server ───────────────────────────────────────────────
+  mlflow:
+    image: python:3.11-slim
+    container_name: sougui-mlflow
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./backend/mlruns:/mlruns
+    command: >
+      bash -c "pip install mlflow --quiet &&
+               mlflow server
+               --backend-store-uri file:///mlruns
+               --default-artifact-root file:///mlruns
+               --host 0.0.0.0
+               --port 5001"
+    restart: unless-stopped
+
+# ── Volumes nommés ─────────────────────────────────────────────────────────────
+volumes:
+  mlruns_data:
+    driver: local

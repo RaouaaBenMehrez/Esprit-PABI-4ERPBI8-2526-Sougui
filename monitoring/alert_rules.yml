@@ -1,0 +1,151 @@
+# ─── alert_rules.yml — Règles d'alertes Prometheus pour Sougui BI ─────────────
+# Ces règles définissent QUAND Prometheus déclenche une alerte
+# Baselines : XGBoost accuracy=97%, max latency=500ms, max error rate=5%
+
+groups:
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # GROUPE 1 : Performance API (Trafic, Latence, Erreurs)
+  # ════════════════════════════════════════════════════════════════════════════
+  - name: api_performance
+    interval: 10s
+    rules:
+
+      # ── Latence élevée (>500ms en P95) ──────────────────────────────────────
+      - alert: HighAPILatency
+        expr: >
+          histogram_quantile(0.95,
+            rate(flask_http_request_duration_seconds_bucket[1m])
+          ) > 0.5
+        for: 30s
+        labels:
+          severity: warning
+          team: mlops
+        annotations:
+          summary: "Latence API élevée détectée"
+          description: >
+            P95 latence = {{ $value | humanizeDuration }} (seuil: 500ms).
+            Vérifiez les endpoints /api/predict/* qui sont les plus lents.
+
+      # ── Taux d'erreur élevé (>5%) ────────────────────────────────────────────
+      - alert: HighErrorRate
+        expr: >
+          rate(flask_http_request_total{status=~"5.."}[2m])
+          /
+          rate(flask_http_request_total[2m]) > 0.05
+        for: 1m
+        labels:
+          severity: critical
+          team: mlops
+        annotations:
+          summary: "Taux d'erreur API critique (>5%)"
+          description: >
+            Taux d'erreur actuel : {{ $value | humanizePercentage }}.
+            Vérifiez les logs Flask pour identifier la cause.
+
+      # ── API hors ligne ───────────────────────────────────────────────────────
+      - alert: APIDown
+        expr: up{job="sougui-backend"} == 0
+        for: 15s
+        labels:
+          severity: critical
+          team: mlops
+        annotations:
+          summary: "API Sougui BI inaccessible !"
+          description: "Le backend Flask (port 5000) ne répond plus."
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # GROUPE 2 : Santé des modèles ML
+  # ════════════════════════════════════════════════════════════════════════════
+  - name: ml_model_health
+    interval: 15s
+    rules:
+
+      # ── Chute d'accuracy XGBoost (>5% sous baseline 97%) ────────────────────
+      - alert: XGBoostAccuracyDrop
+        expr: sougui_model_accuracy{model_name="xgboost"} < 0.92
+        for: 30s
+        labels:
+          severity: warning
+          model: xgboost
+          team: mlops
+        annotations:
+          summary: "Accuracy XGBoost dégradée"
+          description: >
+            Accuracy XGBoost = {{ $value | humanizePercentage }}
+            (baseline: 97%, seuil d'alerte: 92%).
+            Action recommandée : déclencher un réentraînement.
+
+      # ── Chute d'accuracy critique (>10% sous baseline) ──────────────────────
+      - alert: XGBoostAccuracyCritical
+        expr: sougui_model_accuracy{model_name="xgboost"} < 0.87
+        for: 30s
+        labels:
+          severity: critical
+          model: xgboost
+          team: mlops
+        annotations:
+          summary: "CRITIQUE — Accuracy XGBoost effondrée (<87%)"
+          description: >
+            Accuracy XGBoost = {{ $value | humanizePercentage }}.
+            Réentraînement URGENT requis.
+
+      # ── Confidence faible (<70%) ─────────────────────────────────────────────
+      - alert: LowModelConfidence
+        expr: sougui_model_confidence{model_name="xgboost"} < 0.70
+        for: 1m
+        labels:
+          severity: warning
+          team: mlops
+        annotations:
+          summary: "Confiance du modèle XGBoost faible"
+          description: >
+            Confiance moyenne = {{ $value | humanizePercentage }}.
+            Les prédictions sont peu fiables.
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # GROUPE 3 : Dérive des données (Data Drift)
+  # ════════════════════════════════════════════════════════════════════════════
+  - name: data_drift
+    interval: 30s
+    rules:
+
+      # ── Dérive détectée (score >0.15) ────────────────────────────────────────
+      - alert: DataDriftDetected
+        expr: sougui_drift_score > 0.15
+        for: 1m
+        labels:
+          severity: warning
+          team: mlops
+        annotations:
+          summary: "Dérive des données détectée"
+          description: >
+            Score de dérive = {{ $value }} (seuil: 0.15).
+            La distribution des données a changé par rapport à l'entraînement.
+            Considérez un réentraînement des modèles.
+
+      # ── Dérive critique (score >0.40) ────────────────────────────────────────
+      - alert: DataDriftCritical
+        expr: sougui_drift_score > 0.40
+        for: 30s
+        labels:
+          severity: critical
+          team: mlops
+        annotations:
+          summary: "CRITIQUE — Dérive des données sévère"
+          description: >
+            Score de dérive = {{ $value }} (seuil critique: 0.40).
+            Réentraînement immédiat requis via POST /api/retrain.
+
+      # ── Données obsolètes (>48h) ─────────────────────────────────────────────
+      - alert: StaleData
+        expr: sougui_data_freshness_hours > 48
+        for: 5m
+        labels:
+          severity: warning
+          team: mlops
+        annotations:
+          summary: "Données trop anciennes (>48h)"
+          description: >
+            Fraîcheur des données : {{ $value }}h.
+            Vérifiez le pipeline d'ingestion de données.

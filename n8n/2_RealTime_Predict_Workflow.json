@@ -1,0 +1,144 @@
+{
+  "name": "2_RealTime_Predict_Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "predict-client-xgboost",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook_Event_Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ],
+      "webhookId": "webhook-xgboost-prediction",
+      "notesInFlow": true,
+      "notes": "Déclencheur API Temps Réel (Event-Driven)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5000/api/predict/client",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$json.body}}",
+        "options": {}
+      },
+      "id": "2",
+      "name": "Flask_API_XGBoost",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        400,
+        300
+      ],
+      "notesInFlow": true,
+      "notes": "Envoi des variables au modèle ML XGBoost",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}",
+        "options": {}
+      },
+      "id": "3",
+      "name": "Success_Response",
+      "type": "n8n-nodes-base.webhookResponse",
+      "typeVersion": 1,
+      "position": [
+        600,
+        200
+      ],
+      "notesInFlow": true,
+      "notes": "Retourne la prédiction (Segment + Confiance) à l'appelant"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseStatusCode": 503,
+        "responseBody": "{\n  \"error\": \"Le service ML est temporairement indisponible.\"\n}",
+        "options": {}
+      },
+      "id": "4",
+      "name": "Error_Response",
+      "type": "n8n-nodes-base.webhookResponse",
+      "typeVersion": 1,
+      "position": [
+        600,
+        400
+      ],
+      "notesInFlow": true,
+      "notes": "Erreur propre renvoyée en cas de chute Flask (Fallback)"
+    },
+    {
+      "parameters": {
+        "channel": "monitoring-alerts",
+        "text": "=[ALERTE ML] L'API XGBoost a échoué en production !"
+      },
+      "id": "5",
+      "name": "Slack_Alert_Fallback",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        800,
+        400
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "slack_credential",
+          "name": "Slack account"
+        }
+      },
+      "notes": "Notification de panne API"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook_Event_Trigger": {
+      "main": [
+        [
+          {
+            "node": "Flask_API_XGBoost",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Flask_API_XGBoost": {
+      "main": [
+        [
+          {
+            "node": "Success_Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error_Response",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Slack_Alert_Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f781ea3a-7140-4eaa-a12b-d3fe8f9ab9e9",
+  "id": "v1-0-1"
+}

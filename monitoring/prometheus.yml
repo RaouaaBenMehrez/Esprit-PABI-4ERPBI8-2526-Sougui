@@ -1,0 +1,43 @@
+# ─── prometheus.yml — Configuration Prometheus pour Sougui BI ─────────────────
+# Prometheus collecte (scrape) les métriques de votre API Flask toutes les 10s
+# Commande de lancement :
+#   Windows : prometheus.exe --config.file=monitoring/prometheus.yml
+#   Docker  : inclus dans docker-compose-monitoring.yml
+
+global:
+  scrape_interval:     10s   # Collecte toutes les 10 secondes
+  evaluation_interval: 10s   # Évalue les alertes toutes les 10 secondes
+  external_labels:
+    project: 'sougui-bi'
+    env: 'production-like'
+
+# ─── Règles d'alertes ────────────────────────────────────────────────────────
+rule_files:
+  - "alert_rules.yml"
+
+# ─── Configuration Alertmanager (optionnel) ───────────────────────────────────
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: ['alertmanager:9093']
+
+# ─── Jobs de scraping ─────────────────────────────────────────────────────────
+scrape_configs:
+
+  # ── 1. API Flask Sougui ─────────────────────────────────────────────────────
+  - job_name: 'sougui-backend'
+    static_configs:
+      - targets: ['localhost:5000']   # Adresse de votre Flask API
+    metrics_path: '/metrics'          # Endpoint exposé par prometheus_flask_exporter
+    scrape_interval: 10s
+
+  # ── 2. Prometheus lui-même ───────────────────────────────────────────────────
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # ── 3. Node Exporter (métriques système : CPU, RAM, disque) ─────────────────
+  # Décommentez si vous installez node_exporter
+  # - job_name: 'node'
+  #   static_configs:
+  #     - targets: ['localhost:9100']
