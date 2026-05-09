@@ -14,6 +14,9 @@ import logging
 import random
 import json
 import math
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -145,18 +148,42 @@ def _face_distance(desc_a, desc_b):
 
 
 def ensure_face_auth_schema():
-    """Ajoute la colonne face_descriptor à la table users si elle n'existe pas."""
+    """Prépare toutes les tables/colonnes nécessaires au démarrage."""
     try:
         conn = get_db()
         cur = conn.cursor()
-        cur.execute(
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS face_descriptor JSONB"
-        )
+        # Colonne visage
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS face_descriptor JSONB")
+        # Colonne email
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(150)")
+        # Colonne avatar (base64 ou URL)
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT")
+        # Colonne permissions (JSONB) — droits granulaires par utilisateur
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions JSONB")
+        # Table notifications
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS notifications (
+                id          SERIAL PRIMARY KEY,
+                user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                title       VARCHAR(200) NOT NULL,
+                message     TEXT NOT NULL,
+                type        VARCHAR(30) DEFAULT 'info',
+                is_read     BOOLEAN DEFAULT FALSE,
+                created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        # Table paramètres application (clé/valeur)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS app_settings (
+                key   VARCHAR(100) PRIMARY KEY,
+                value TEXT
+            )
+        """)
         conn.commit()
         conn.close()
-        logger.info('[FaceAuth] Colonne face_descriptor vérifiée dans users.')
+        logger.info('[Setup] Schéma DB vérifié (notifications, app_settings, face_descriptor).')
     except Exception as e:
-        logger.warning(f'[FaceAuth] Impossible de préparer face_descriptor: {e}')
+        logger.warning(f'[Setup] Erreur schéma DB: {e}')
 
 
 # ─── Configuration PostgreSQL ────────────────────────────────────────────────
@@ -384,9 +411,364 @@ def login_face():
     })
 
 
+# ─── Helpers Email Gmail ─────────────────────────────────────────────────────
+def _get_email_config():
+    try:
+        rows = fetch_rows("SELECT key, value FROM app_settings WHERE key IN ('gmail_sender','gmail_password')")
+        return {r['key']: r['value'] for r in rows}
+    except Exception:
+        return {}
+
+def _send_gmail(to_email, subject, body_html):
+    cfg      = _get_email_config()
+    sender   = cfg.get('gmail_sender')
+    password = cfg.get('gmail_password')
+    if not sender or not password or not to_email:
+        logger.warning('[Email] Config Gmail incomplète — email non envoyé')
+        return False
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From']    = sender
+        msg['To']      = to_email
+        msg.attach(MIMEText(body_html, 'html', 'utf-8'))
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=10) as srv:
+            srv.login(sender, password)
+            srv.sendmail(sender, to_email, msg.as_string())
+        logger.info(f'[Email] Envoyé à {to_email}: {subject}')
+        return True
+    except Exception as e:
+        logger.error(f'[Email] Erreur: {e}')
+        return False
+
+def _push_notification(user_id, title, message, notif_type='info', send_email=True):
+    """Crée une notif en DB + envoie email si l'user a un Gmail configuré."""
+    try:
+        conn = get_db()
+        cur  = conn.cursor()
+        cur.execute(
+            "INSERT INTO notifications (user_id, title, message, type) VALUES (%s,%s,%s,%s)",
+            (user_id, title, message, notif_type)
+        )
+        conn.commit()
+        if send_email:
+            cur.execute("SELECT email, username FROM users WHERE id = %s", (user_id,))
+            row = cur.fetchone()
+            if row and row[0]:
+                body = f"""<div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;
+background:#05080f;color:#e8eef8;padding:32px;border-radius:12px;">
+  <h1 style="color:#4d7fff;font-size:24px;margin:0 0 8px;">Sougui BI Suite</h1>
+  <p style="color:#4d6080;font-size:11px;margin:0 0 24px;">Notification automatique</p>
+  <div style="background:rgba(30,90,255,0.08);border:1px solid rgba(30,90,255,0.2);
+border-radius:10px;padding:24px;">
+    <h2 style="color:#e8eef8;margin:0 0 12px;">{title}</h2>
+    <p style="color:#a0b0cc;line-height:1.7;margin:0;">{message}</p>
+  </div>
+  <p style="color:#2d3f5e;font-size:10px;text-align:center;margin-top:20px;">
+  Ne pas répondre · Sougui BI · ESPRIT 4ERPBI8</p>
+</div>"""
+                _send_gmail(row[0], f'[Sougui] {title}', body)
+        conn.close()
+    except Exception as e:
+        logger.error(f'[Notification] {e}')
+
+
+# ─── Notifications ────────────────────────────────────────────────────────────
+@app.route('/api/notifications', methods=['GET'])
+def get_notifications():
+    user_id = request.args.get('user_id', type=int)
+    if not user_id:
+        return jsonify([])
+    rows = fetch_rows(
+        "SELECT id, title, message, type, is_read, created_at FROM notifications "
+        "WHERE user_id = %s ORDER BY created_at DESC LIMIT 50",
+        (user_id,)
+    )
+    return jsonify([{
+        'id':         r['id'],
+        'title':      r['title'],
+        'message':    r['message'],
+        'type':       r['type'],
+        'is_read':    r['is_read'],
+        'created_at': r['created_at'].isoformat() if r['created_at'] else None,
+    } for r in rows])
+
+@app.route('/api/notifications/<int:nid>/read', methods=['PUT'])
+def mark_notif_read(nid):
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE notifications SET is_read=TRUE WHERE id=%s", (nid,))
+        conn.commit()
+    finally:
+        conn.close()
+    return jsonify({'success': True})
+
+@app.route('/api/notifications/read-all', methods=['PUT'])
+def mark_all_notif_read():
+    user_id = (request.json or {}).get('user_id')
+    if not user_id:
+        return jsonify({'success': False}), 400
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE notifications SET is_read=TRUE WHERE user_id=%s", (user_id,))
+        conn.commit()
+    finally:
+        conn.close()
+    return jsonify({'success': True})
+
+
+# ─── Users Management ─────────────────────────────────────────────────────────
+@app.route('/api/users', methods=['GET'])
+def list_users():
+    rows = fetch_rows("SELECT id, username, role, email, created_at FROM users ORDER BY id")
+    return jsonify([{
+        'id':         r['id'],
+        'username':   r['username'],
+        'role':       r['role'] or 'admin',
+        'email':      r.get('email') or '',
+        'created_at': r['created_at'].isoformat() if r['created_at'] else None,
+    } for r in rows])
+
+@app.route('/api/users', methods=['POST'])
+def create_user():
+    data     = request.json or {}
+    username = (data.get('username') or '').strip()
+    password = (data.get('password') or '').strip()
+    role     = (data.get('role') or 'commercial').strip()
+    email    = (data.get('email') or '').strip()
+    if not username or not password:
+        return jsonify({'success': False, 'message': 'username et password requis'}), 400
+    hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO users (username, password, role, email) VALUES (%s,%s,%s,%s) RETURNING id",
+            (username, hashed, role, email or None)
+        )
+        new_id = cur.fetchone()[0]
+        conn.commit()
+        _push_notification(new_id, 'Bienvenue sur Sougui BI',
+            f'Votre compte «{username}» (rôle : {role}) a été créé.', 'success')
+        return jsonify({'success': True, 'id': new_id})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 400
+    finally:
+        conn.close()
+
+@app.route('/api/users/<int:uid>', methods=['DELETE'])
+def delete_user(uid):
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM users WHERE id=%s", (uid,))
+        conn.commit()
+    finally:
+        conn.close()
+    return jsonify({'success': True})
+
+@app.route('/api/users/<int:uid>/role', methods=['PUT'])
+def change_user_role(uid):
+    data       = request.json or {}
+    new_role   = (data.get('role') or '').strip()
+    changed_by = (data.get('changed_by') or 'CEO').strip()
+    if not new_role:
+        return jsonify({'success': False, 'message': 'role manquant'}), 400
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT username, role FROM users WHERE id=%s", (uid,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({'success': False, 'message': 'Utilisateur introuvable'}), 404
+        old_role = row[1]
+        cur.execute("UPDATE users SET role=%s WHERE id=%s", (new_role, uid))
+        conn.commit()
+        _push_notification(
+            uid,
+            'Votre rôle a été modifié',
+            f'Votre rôle a été changé de «{old_role}» vers «{new_role}» par {changed_by}.',
+            'warning'
+        )
+    finally:
+        conn.close()
+    return jsonify({'success': True})
+
+
+# ─── Profile (tous rôles) ─────────────────────────────────────────────────────
+@app.route('/api/profile/update', methods=['PUT'])
+def update_profile():
+    data    = request.json or {}
+    user_id = data.get('user_id')
+    email   = (data.get('email') or '').strip()
+    if not user_id:
+        return jsonify({'success': False, 'message': 'user_id manquant'}), 400
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE users SET email=%s WHERE id=%s", (email or None, user_id))
+        conn.commit()
+    finally:
+        conn.close()
+    return jsonify({'success': True})
+
+@app.route('/api/profile/avatar', methods=['PUT'])
+def update_avatar():
+    """Met à jour la photo de profil (base64) d'un utilisateur."""
+    data       = request.json or {}
+    user_id    = data.get('user_id')
+    avatar_b64 = (data.get('avatar') or '').strip()
+    if not user_id:
+        return jsonify({'success': False, 'message': 'user_id manquant'}), 400
+    # Validation taille : max ~2MB base64
+    if len(avatar_b64) > 2_800_000:
+        return jsonify({'success': False, 'message': 'Image trop lourde (max 2 MB)'}), 400
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE users SET avatar_url=%s WHERE id=%s", (avatar_b64 or None, user_id))
+        conn.commit()
+    finally:
+        conn.close()
+    return jsonify({'success': True})
+
+@app.route('/api/profile/<int:user_id>', methods=['GET'])
+def get_profile(user_id):
+    """Retourne le profil complet d'un utilisateur (sans mot de passe)."""
+    rows = fetch_rows(
+        "SELECT id, username, role, email, avatar_url, permissions, created_at FROM users WHERE id=%s",
+        (user_id,)
+    )
+    if not rows:
+        return jsonify({'success': False, 'message': 'Introuvable'}), 404
+    r = rows[0]
+    return jsonify({
+        'id':          r['id'],
+        'username':    r['username'],
+        'role':        r['role'] or 'admin',
+        'email':       r.get('email') or '',
+        'avatar_url':  r.get('avatar_url') or '',
+        'permissions': r.get('permissions') or {},
+        'created_at':  r['created_at'].isoformat() if r['created_at'] else None,
+    })
+
+@app.route('/api/users/<int:uid>/permissions', methods=['PUT'])
+def update_user_permissions(uid):
+    """Met à jour les permissions granulaires d'un utilisateur (CEO/admin only)."""
+    data = request.json or {}
+    perms = data.get('permissions', {})
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT username FROM users WHERE id=%s", (uid,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({'success': False, 'message': 'Utilisateur introuvable'}), 404
+        cur.execute("UPDATE users SET permissions=%s WHERE id=%s", (json.dumps(perms), uid))
+        conn.commit()
+        _push_notification(
+            uid,
+            'Vos permissions ont été mises à jour',
+            f'Vos droits d\'accès ont été modifiés par l\'administrateur.',
+            'info'
+        )
+    finally:
+        conn.close()
+    return jsonify({'success': True})
+
+@app.route('/api/users/list', methods=['GET'])
+def list_users_full():
+    """Liste tous les utilisateurs avec avatar et permissions."""
+    rows = fetch_rows(
+        "SELECT id, username, role, email, avatar_url, permissions, created_at FROM users ORDER BY id"
+    )
+    return jsonify([{
+        'id':          r['id'],
+        'username':    r['username'],
+        'role':        r['role'] or 'admin',
+        'email':       r.get('email') or '',
+        'avatar_url':  r.get('avatar_url') or '',
+        'permissions': r.get('permissions') or {},
+        'created_at':  r['created_at'].isoformat() if r['created_at'] else None,
+    } for r in rows])
+
+@app.route('/api/profile/password', methods=['PUT'])
+def change_password():
+    data         = request.json or {}
+    user_id      = data.get('user_id')
+    old_password = (data.get('old_password') or '').strip()
+    new_password = (data.get('new_password') or '').strip()
+    if not user_id or not old_password or not new_password:
+        return jsonify({'success': False, 'message': 'Données incomplètes'}), 400
+    rows = fetch_rows("SELECT password FROM users WHERE id=%s", (user_id,))
+    if not rows:
+        return jsonify({'success': False, 'message': 'Utilisateur introuvable'}), 404
+    stored = rows[0]['password']
+    if isinstance(stored, str):
+        stored = stored.encode('utf-8')
+    if not bcrypt.checkpw(old_password.encode(), stored):
+        return jsonify({'success': False, 'message': 'Ancien mot de passe incorrect'}), 401
+    new_hash = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE users SET password=%s WHERE id=%s", (new_hash, user_id))
+        conn.commit()
+        _push_notification(user_id, 'Mot de passe modifié',
+            'Votre mot de passe a été changé avec succès.', 'success', send_email=True)
+    finally:
+        conn.close()
+    return jsonify({'success': True})
+
+
+# ─── App Settings (Power BI URLs, Gmail SMTP) ─────────────────────────────────
+@app.route('/api/settings', methods=['GET'])
+def get_settings():
+    rows = fetch_rows("SELECT key, value FROM app_settings")
+    return jsonify({r['key']: r['value'] for r in rows})
+
+@app.route('/api/settings', methods=['PUT'])
+def update_settings():
+    data = request.json or {}
+    conn = get_db()
+    try:
+        cur = conn.cursor()
+        for key, value in data.items():
+            cur.execute(
+                "INSERT INTO app_settings (key, value) VALUES (%s,%s) "
+                "ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value",
+                (key, str(value))
+            )
+        conn.commit()
+    finally:
+        conn.close()
+    return jsonify({'success': True})
+
+@app.route('/api/settings/test-email', methods=['POST'])
+def test_email():
+    data     = request.json or {}
+    to_email = (data.get('to') or '').strip()
+    if not to_email:
+        return jsonify({'success': False, 'message': 'Email destinataire manquant'}), 400
+    ok = _send_gmail(
+        to_email,
+        '[Sougui] Test de notification email',
+        '<div style="font-family:Arial;padding:24px;background:#05080f;color:#e8eef8;border-radius:10px;">'
+        '<h2 style="color:#4d7fff;">✅ Configuration Gmail OK</h2>'
+        '<p>Votre configuration email Sougui BI fonctionne correctement.</p></div>'
+    )
+    if ok:
+        return jsonify({'success': True, 'message': 'Email test envoyé !'})
+    return jsonify({'success': False, 'message': 'Échec — vérifiez la config Gmail'}), 500
+
+
 # ─── Dashboard ───────────────────────────────────────────────────────────────
 @app.route('/api/dashboard', methods=['GET'])
 def get_dashboard_data():
+
     sales_df = fetch_df("SELECT amount, channel, date FROM sales")
 
     if sales_df.empty:

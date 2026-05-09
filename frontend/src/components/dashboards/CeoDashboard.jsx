@@ -6,6 +6,7 @@ import {
 } from 'recharts';
 import { TrendingUp, Users, ShoppingBag, Percent, BrainCircuit, Loader2, ChevronUp, ChevronDown, Search, BarChart2, Package, Database, RefreshCw, FileCode } from 'lucide-react';
 import AppLayout from '../layout/AppLayout';
+import ProfileSettings from '../profile/ProfileSettings';
 
 const API = 'http://127.0.0.1:5000/api';
 const PBI_BASE = 'https://app.powerbi.com/reportEmbed?reportId=fa5fa437-6265-43ec-a047-a6802e6f49c4&autoAuth=true&ctid=604f1a96-cbe8-43f8-abbf-f8eaf5d85730';
@@ -289,7 +290,7 @@ const PowerBIPage = ({ role }) => {
 };
 
 /* ══ CEO DASHBOARD ═══════════════════════════════════════════════ */
-const CeoDashboard = ({ user, onLogout }) => {
+const CeoDashboard = ({ user, onLogout, onUpdateUser }) => {
   const [page, setPage] = useState('overview');
   const [dash, setDash] = useState(null);
   const [sales, setSales] = useState([]);
@@ -605,6 +606,13 @@ const CeoDashboard = ({ user, onLogout }) => {
             </h1>
             <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 32 }}>Gestion du cycle de vie des modèles ML · Historique des fichiers .pkl</p>
             <ModelExplorer />
+          </div>
+        )}
+
+        {/* ── Profile Settings ── */}
+        {page === 'settings' && (
+          <div style={{ padding: '40px' }}>
+            <ProfileSettings user={user} onUpdateUser={onUpdateUser} />
           </div>
         )}
 

@@ -1,7 +1,8 @@
 import React from 'react';
-import { Sun, Moon, LogOut } from 'lucide-react';
+import { Sun, Moon, LogOut, Settings } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import FloatingAgent from '../agent/FloatingAgent';
+import NotificationBell from '../profile/NotificationBell';
 import logoUrl from '../../assets/Logo.png';
 
 const ROLE_CONFIG = {
@@ -28,20 +29,23 @@ const AppLayout = ({ user, activePage, setActivePage, onLogout, navItems, childr
               <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--text-muted)', marginTop: 2 }}>BI Suite</div>
             </div>
           </div>
-          {/* User Role Badge */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            padding: '10px 12px', borderRadius: 10,
-            background: roleConf.bg, border: `1px solid ${roleConf.color}33`,
-          }}>
-            <div style={{ fontSize: 20, lineHeight: 1 }}>{roleConf.icon}</div>
+          {/* User Badge — cliquer pour aller aux paramètres */}
+          <div onClick={() => setActivePage('settings')} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: roleConf.bg, border: `1px solid ${roleConf.color}33`, cursor: 'pointer', transition: 'opacity 0.2s' }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+            title="Paramètres du profil">
+            <div style={{ width: 34, height: 34, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: `${roleConf.color}22`, border: `2px solid ${roleConf.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {user?.avatar_url
+                ? <img src={user.avatar_url} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <span style={{ fontSize: 15, fontWeight: 800, color: roleConf.color }}>{(user?.username?.[0] || '?').toUpperCase()}</span>
+              }
+            </div>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: roleConf.color, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                {roleConf.label}
-              </div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: roleConf.color, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{roleConf.label}</div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>{user?.username}</div>
             </div>
           </div>
+
         </div>
 
         {/* Nav */}
@@ -52,22 +56,14 @@ const AppLayout = ({ user, activePage, setActivePage, onLogout, navItems, childr
                 {section.title}
               </div>
               {section.items.map(item => (
-                <button
-                  key={item.id}
-                  onClick={() => setActivePage(item.id)}
-                  className={`sidebar-item ${activePage === item.id ? 'active' : ''}`}
-                >
+                <button key={item.id} onClick={() => setActivePage(item.id)}
+                  className={`sidebar-item ${activePage === item.id ? 'active' : ''}`}>
                   <span style={{ fontSize: 16, lineHeight: 1 }}>{item.icon}</span>
                   <span style={{ fontSize: 13 }}>{item.label}</span>
                   {item.badge && (
-                    <span style={{
-                      marginLeft: 'auto', fontSize: 9, fontWeight: 700,
-                      padding: '2px 6px', borderRadius: 9999,
-                      background: item.badge === 'BI'
-                        ? 'rgba(249,115,22,0.15)'
-                        : 'rgba(30,90,255,0.15)',
-                      color: item.badge === 'BI' ? 'var(--orange)' : 'var(--blue)',
-                    }}>{item.badge}</span>
+                    <span style={{ marginLeft: 'auto', fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 9999, background: item.badge === 'BI' ? 'rgba(249,115,22,0.15)' : 'rgba(30,90,255,0.15)', color: item.badge === 'BI' ? 'var(--orange)' : 'var(--blue)' }}>
+                      {item.badge}
+                    </span>
                   )}
                 </button>
               ))}
@@ -82,7 +78,20 @@ const AppLayout = ({ user, activePage, setActivePage, onLogout, navItems, childr
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e', display: 'inline-block', animation: 'pulseDot 2s infinite' }} />
             <span style={{ fontSize: 11, fontWeight: 600, color: '#22c55e' }}>PostgreSQL · Live</span>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+
+          {/* Paramètres */}
+          <button onClick={() => setActivePage('settings')}
+            className={`sidebar-item ${activePage === 'settings' ? 'active' : ''}`}
+            style={{ borderRadius: 10, padding: '8px 12px' }}>
+            <Settings size={15} />
+            <span style={{ fontSize: 13 }}>Paramètres</span>
+          </button>
+
+          {/* Cloche + Thème + Déconnexion */}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'center', border: '1px solid var(--border)', borderRadius: 10, padding: '6px 0' }}>
+              <NotificationBell user={user} />
+            </div>
             <button onClick={toggleTheme} className="btn-ghost" style={{ flex: 1, justifyContent: 'center', border: '1px solid var(--border)', borderRadius: 10, padding: '8px' }}>
               {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
             </button>
@@ -98,7 +107,7 @@ const AppLayout = ({ user, activePage, setActivePage, onLogout, navItems, childr
         {children}
       </main>
 
-      {/* ── FLOATING AGENT (accessible depuis tous les dashboards) ── */}
+      {/* ── FLOATING AGENT ── */}
       <FloatingAgent user={user} />
     </div>
   );

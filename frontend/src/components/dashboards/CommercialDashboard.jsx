@@ -5,6 +5,7 @@ import {
 } from 'recharts';
 import { Send, Bot, User, Loader2, BrainCircuit, Search } from 'lucide-react';
 import AppLayout from '../layout/AppLayout';
+import ProfileSettings from '../profile/ProfileSettings';
 
 const API     = 'http://127.0.0.1:5000/api';
 const AGENT   = 'http://localhost:8000';
@@ -322,7 +323,7 @@ const PowerBIPage = () => (
 );
 
 /* ══ COMMERCIAL DASHBOARD ═══════════════════════════════════════ */
-const CommercialDashboard = ({ user, onLogout }) => {
+const CommercialDashboard = ({ user, onLogout, onUpdateUser }) => {
   const [page, setPage] = useState('cm-overview');
   const [dash, setDash] = useState(null);
   const [sales, setSales] = useState([]);
@@ -577,6 +578,12 @@ const CommercialDashboard = ({ user, onLogout }) => {
               Powered by Gemini 2.5 Flash · RAG ChromaDB · Port 8000
             </p>
             <AgentChat user={user} />
+          </div>
+        )}
+
+        {page === 'settings' && (
+          <div style={{ padding: '40px' }}>
+            <ProfileSettings user={user} onUpdateUser={onUpdateUser} />
           </div>
         )}
 

@@ -2,8 +2,8 @@
    SOUGUI — Design System : Dark + Light Mode
    Bleu (#1e5aff) + Bleu Marine (#0d1829) + Orange (#f97316)
 ═══════════════════════════════════════════════════════════════════ */
-@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Inter:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
 
 /* ── CSS Variables — Dark Mode (default) ────────────────────────────── */
 :root {

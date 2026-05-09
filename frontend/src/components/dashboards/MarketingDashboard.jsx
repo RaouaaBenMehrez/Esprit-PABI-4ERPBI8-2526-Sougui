@@ -5,6 +5,7 @@ import {
 } from 'recharts';
 import { Loader2, BrainCircuit } from 'lucide-react';
 import AppLayout from '../layout/AppLayout';
+import ProfileSettings from '../profile/ProfileSettings';
 
 const API = 'http://127.0.0.1:5000/api';
 const PBI_BASE = 'https://app.powerbi.com/reportEmbed?reportId=fa5fa437-6265-43ec-a047-a6802e6f49c4&autoAuth=true&ctid=604f1a96-cbe8-43f8-abbf-f8eaf5d85730';
@@ -235,7 +236,7 @@ const PowerBIPage = () => (
 );
 
 /* ══ MARKETING DASHBOARD ════════════════════════════════════════ */
-const MarketingDashboard = ({ user, onLogout }) => {
+const MarketingDashboard = ({ user, onLogout, onUpdateUser }) => {
   const [page, setPage] = useState('mk-overview');
   const [dash, setDash] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -416,6 +417,12 @@ const MarketingDashboard = ({ user, onLogout }) => {
               Classification <span style={{ color: PURPLE }}>XGBoost</span>
             </h1>
             <XgbPredictor />
+          </div>
+        )}
+
+        {page === 'settings' && (
+          <div style={{ padding: '40px' }}>
+            <ProfileSettings user={user} onUpdateUser={onUpdateUser} />
           </div>
         )}
 
