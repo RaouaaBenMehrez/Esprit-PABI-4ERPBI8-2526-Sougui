@@ -291,7 +291,12 @@ const PowerBIPage = ({ role }) => {
 
 /* ══ CEO DASHBOARD ═══════════════════════════════════════════════ */
 const CeoDashboard = ({ user, onLogout, onUpdateUser }) => {
-  const [page, setPage] = useState('overview');
+  const [page, setPage] = useState(
+    () => sessionStorage.getItem('sougui_page_ceo') || 'overview'
+  );
+
+  // Persister la page active au changement (survive au F5)
+  const handleSetPage = (p) => { setPage(p); sessionStorage.setItem('sougui_page_ceo', p); };
   const [dash, setDash] = useState(null);
   const [sales, setSales] = useState([]);
   const [salesFiltered, setSalesFiltered] = useState([]);
@@ -341,7 +346,7 @@ const CeoDashboard = ({ user, onLogout, onUpdateUser }) => {
   );
 
   return (
-    <AppLayout user={user} activePage={page} setActivePage={setPage} onLogout={onLogout} navItems={NAV}>
+    <AppLayout user={user} activePage={page} setActivePage={handleSetPage} onLogout={onLogout} navItems={NAV}>
       <div style={{ padding: '40px' }}>
 
         {/* ── Overview ── */}

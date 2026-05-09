@@ -324,7 +324,10 @@ const PowerBIPage = () => (
 
 /* ══ COMMERCIAL DASHBOARD ═══════════════════════════════════════ */
 const CommercialDashboard = ({ user, onLogout, onUpdateUser }) => {
-  const [page, setPage] = useState('cm-overview');
+  const [page, setPage] = useState(
+    () => sessionStorage.getItem('sougui_page_com') || 'cm-overview'
+  );
+  const handleSetPage = (p) => { setPage(p); sessionStorage.setItem('sougui_page_com', p); };
   const [dash, setDash] = useState(null);
   const [sales, setSales] = useState([]);
   const [salesSearch, setSalesSearch] = useState('');
@@ -369,7 +372,7 @@ const CommercialDashboard = ({ user, onLogout, onUpdateUser }) => {
   });
 
   return (
-    <AppLayout user={user} activePage={page} setActivePage={setPage} onLogout={onLogout} navItems={NAV}>
+    <AppLayout user={user} activePage={page} setActivePage={handleSetPage} onLogout={onLogout} navItems={NAV}>
       <div style={{ padding: 40 }}>
 
         {/* ── Overview Commercial ── */}

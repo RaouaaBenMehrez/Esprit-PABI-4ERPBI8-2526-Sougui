@@ -237,7 +237,10 @@ const PowerBIPage = () => (
 
 /* ══ MARKETING DASHBOARD ════════════════════════════════════════ */
 const MarketingDashboard = ({ user, onLogout, onUpdateUser }) => {
-  const [page, setPage] = useState('mk-overview');
+  const [page, setPage] = useState(
+    () => sessionStorage.getItem('sougui_page_mkt') || 'mk-overview'
+  );
+  const handleSetPage = (p) => { setPage(p); sessionStorage.setItem('sougui_page_mkt', p); };
   const [dash, setDash] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -260,7 +263,7 @@ const MarketingDashboard = ({ user, onLogout, onUpdateUser }) => {
   const totalCa  = dash?.total_ca || 1;
 
   return (
-    <AppLayout user={user} activePage={page} setActivePage={setPage} onLogout={onLogout} navItems={NAV}>
+    <AppLayout user={user} activePage={page} setActivePage={handleSetPage} onLogout={onLogout} navItems={NAV}>
       <div style={{ padding: 40 }}>
 
         {/* ── Overview Marketing ── */}

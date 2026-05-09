@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Bot, User, Send, X, Mic, MicOff, Minimize2, MessageCircle, Volume2, VolumeX, Maximize2, ChevronUp } from 'lucide-react';
+import { Bot, User, Send, X, Mic, MicOff, Minimize2, MessageCircle, Volume2, VolumeX, Maximize2 } from 'lucide-react';
 
 const AGENT  = 'http://localhost:8000';
 const ORANGE = '#f97316';
@@ -11,6 +11,9 @@ const SIZES = {
   normal:  { width: 400, height: 560 },
   large:   { width: 520, height: 680 },
 };
+
+// Default position (bottom-right)
+const DEFAULT_POS = { x: null, y: null }; // null = use CSS default
 
 function buildFallback(msg) {
   const m = msg.toLowerCase();
@@ -26,38 +29,33 @@ function buildFallback(msg) {
   return "Je suis votre assistante Sougui. Parlez-moi de l'occasion, du budget ou du type de produit artisanal que vous cherchez !";
 }
 
-/* ══ FLOATING AGENT ═══════════════════════════════════════════════════ */
+/* ══ FLOATING AGENT — icône + chat bougent ensemble ══════════════════════ */
 const FloatingAgent = ({ user }) => {
-  const [open, setOpen]       = useState(false);
-  const [size, setSize]       = useState('normal');
+  const [open, setOpen]         = useState(false);
+  const [size, setSize]         = useState('normal');
   const [messages, setMessages] = useState([{
     role: 'bot',
     content: `Bonjour${user?.username ? ` ${user.username}` : ''} ! Je suis Sougui, votre assistante artisanale. 🌿 Comment puis-je vous aider ?`
   }]);
-  const [input, setInput]     = useState('');
-  const [loading, setLoading] = useState(false);
+  const [input, setInput]       = useState('');
+  const [loading, setLoading]   = useState(false);
   const [agentOnline, setAgentOnline] = useState(false);
+
+  // ── Drag unifié : UNE seule position pour icône + fenêtre ──
+  const [pos, setPos]         = useState(DEFAULT_POS); // { x, y } = coin bas-droit de l'icône
+  const dragging              = useRef(false);
+  const dragOffset            = useRef({ x: 0, y: 0 });
+  const btnRef                = useRef(null);
+  const clickProtect          = useRef(false); // éviter click après drag
 
   // Voice
   const [listening, setListening]   = useState(false);
   const [ttsEnabled, setTtsEnabled] = useState(false);
   const recogRef = useRef(null);
 
-  // Drag — button
-  const [btnPos, setBtnPos] = useState({ x: null, y: null }); // null → use CSS default (right/bottom)
-  const btnDragRef   = useRef(false);
-  const btnOffsetRef = useRef({ x: 0, y: 0 });
-  const btnRef       = useRef(null);
-
-  // Drag — window
-  const [winPos, setWinPos]   = useState({ x: null, y: null });
-  const winDragRef   = useRef(false);
-  const winOffsetRef = useRef({ x: 0, y: 0 });
-  const winRef       = useRef(null);
-
   const endRef = useRef(null);
 
-  /* ── Agent health check ─────────────────────────────────────────── */
+  /* ── Agent health check ── */
   useEffect(() => {
     const check = () =>
       fetch(`${AGENT}/health`, { signal: AbortSignal.timeout(3000) })
@@ -71,30 +69,20 @@ const FloatingAgent = ({ user }) => {
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, open]);
 
-  /* ── Global mouse drag handler ──────────────────────────────────── */
+  /* ── Global drag handlers ── */
   useEffect(() => {
     const onMove = (e) => {
+      if (!dragging.current) return;
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
-      if (btnDragRef.current && btnRef.current) {
-        const bw = btnRef.current.offsetWidth;
-        const bh = btnRef.current.offsetHeight;
-        setBtnPos({
-          x: Math.min(Math.max(clientX - btnOffsetRef.current.x, 0), window.innerWidth  - bw),
-          y: Math.min(Math.max(clientY - btnOffsetRef.current.y, 0), window.innerHeight - bh),
-        });
-      }
-      if (winDragRef.current && winRef.current) {
-        const ww = winRef.current.offsetWidth;
-        const wh = winRef.current.offsetHeight;
-        setWinPos({
-          x: Math.min(Math.max(clientX - winOffsetRef.current.x, 0), window.innerWidth  - ww),
-          y: Math.min(Math.max(clientY - winOffsetRef.current.y, 0), window.innerHeight - wh),
-        });
-      }
+      const btnW = btnRef.current?.offsetWidth  || 56;
+      const btnH = btnRef.current?.offsetHeight || 56;
+      const newX = Math.min(Math.max(clientX - dragOffset.current.x, 0), window.innerWidth  - btnW);
+      const newY = Math.min(Math.max(clientY - dragOffset.current.y, 0), window.innerHeight - btnH);
+      setPos({ x: newX, y: newY });
+      clickProtect.current = true;
     };
-    const onUp = () => { btnDragRef.current = false; winDragRef.current = false; };
+    const onUp = () => { dragging.current = false; };
 
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup',   onUp);
@@ -108,141 +96,113 @@ const FloatingAgent = ({ user }) => {
     };
   }, []);
 
-  /* ── Start drag — button ────────────────────────────────────────── */
-  const startDragBtn = useCallback((e) => {
+  /* ── Start drag (sur le bouton) ── */
+  const startDrag = useCallback((e) => {
     if (e.button !== undefined && e.button !== 0) return;
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
     const rect = btnRef.current?.getBoundingClientRect();
-    btnOffsetRef.current = {
-      x: clientX - (rect?.left ?? 0),
-      y: clientY - (rect?.top  ?? 0),
-    };
-    btnDragRef.current = true;
+    dragOffset.current = { x: clientX - (rect?.left ?? 0), y: clientY - (rect?.top ?? 0) };
+    dragging.current   = true;
+    clickProtect.current = false;
     e.preventDefault();
   }, []);
 
-  /* ── Start drag — window ────────────────────────────────────────── */
-  const startDragWin = useCallback((e) => {
-    if (e.button !== undefined && e.button !== 0) return;
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    const rect = winRef.current?.getBoundingClientRect();
-    winOffsetRef.current = {
-      x: clientX - (rect?.left ?? 0),
-      y: clientY - (rect?.top  ?? 0),
-    };
-    winDragRef.current = true;
-    e.preventDefault();
+  /* ── Toggle open (protégé contre faux clicks après drag) ── */
+  const handleBtnClick = useCallback(() => {
+    if (clickProtect.current) { clickProtect.current = false; return; }
+    setOpen(o => !o);
   }, []);
 
-  /* ── Voice — Microphone ─────────────────────────────────────────── */
+  /* ── Calcul de position de la fenêtre chat (toujours au-dessus/gauche de l'icône) ── */
+  const BTN_SIZE = 56;
+  const GAP      = 12;
+  const { width: winW, height: winH } = SIZES[size];
+
+  let btnStylePos, winStylePos;
+
+  if (pos.x !== null) {
+    // Position custom après drag
+    const bx = pos.x;
+    const by = pos.y;
+    btnStylePos = { position: 'fixed', left: bx, top: by };
+
+    // Essayer d'afficher la fenêtre au-dessus du bouton
+    let winTop  = by - winH - GAP;
+    let winLeft = bx - winW + BTN_SIZE;
+    // Recadrage si hors écran
+    if (winTop < 8)                         winTop  = by + BTN_SIZE + GAP;
+    if (winLeft < 8)                        winLeft = 8;
+    if (winLeft + winW > window.innerWidth) winLeft = window.innerWidth - winW - 8;
+
+    winStylePos = { position: 'fixed', left: winLeft, top: winTop };
+  } else {
+    // Position par défaut : coin bas-droit
+    btnStylePos = { position: 'fixed', right: 28, bottom: 28 };
+    winStylePos = { position: 'fixed', right: 28, bottom: 28 + BTN_SIZE + GAP };
+  }
+
+  /* ── Voice ── */
   const startListening = useCallback(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert('Votre navigateur ne supporte pas la reconnaissance vocale. Essayez Chrome.');
-      return;
-    }
-    if (recogRef.current) {
-      try { recogRef.current.stop(); } catch {}
-    }
-    const recog = new SpeechRecognition();
-    recog.lang           = 'fr-FR';
-    recog.continuous     = false;
-    recog.interimResults = true;
-
-    recog.onstart = () => setListening(true);
-
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { alert('Votre navigateur ne supporte pas la reconnaissance vocale. Essayez Chrome.'); return; }
+    if (recogRef.current) { try { recogRef.current.stop(); } catch {} }
+    const recog = new SR();
+    recog.lang = 'fr-FR'; recog.continuous = false; recog.interimResults = true;
+    recog.onstart  = () => setListening(true);
     recog.onresult = (e) => {
-      let interim = '';
-      let final   = '';
+      let interim = '', final = '';
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const t = e.results[i][0].transcript;
-        if (e.results[i].isFinal) final += t;
-        else interim += t;
+        if (e.results[i].isFinal) final += t; else interim += t;
       }
       setInput(final || interim);
     };
-
     recog.onend = () => {
       setListening(false);
-      // Auto-send if we got a final transcript
-      setInput(prev => {
-        if (prev.trim()) {
-          // schedule send after state update
-          setTimeout(() => {
-            document.getElementById('agent-send-btn')?.click();
-          }, 100);
-        }
-        return prev;
-      });
+      setInput(prev => { if (prev.trim()) setTimeout(() => document.getElementById('agent-send-btn')?.click(), 100); return prev; });
     };
-
-    recog.onerror = (e) => {
-      setListening(false);
-      if (e.error !== 'no-speech' && e.error !== 'aborted') {
-        console.warn('[Voice] Erreur reconnaissance:', e.error);
-      }
-    };
-
+    recog.onerror = (e) => { setListening(false); if (e.error !== 'no-speech' && e.error !== 'aborted') console.warn('[Voice]', e.error); };
     recogRef.current = recog;
     recog.start();
   }, []);
 
-  const stopListening = useCallback(() => {
-    try { recogRef.current?.stop(); } catch {}
-    setListening(false);
-  }, []);
+  const stopListening = useCallback(() => { try { recogRef.current?.stop(); } catch {} setListening(false); }, []);
 
-  /* ── TTS ────────────────────────────────────────────────────────── */
+  /* ── TTS ── */
   const speak = useCallback((text) => {
     if (!ttsEnabled || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
-    const utt  = new SpeechSynthesisUtterance(text.slice(0, 200));
-    utt.lang   = 'fr-FR';
-    utt.rate   = 1.05;
-    utt.pitch  = 1;
-    // prefer a French voice if available
-    const voices = window.speechSynthesis.getVoices();
-    const frVoice = voices.find(v => v.lang.startsWith('fr'));
+    const utt = new SpeechSynthesisUtterance(text.slice(0, 200));
+    utt.lang = 'fr-FR'; utt.rate = 1.05; utt.pitch = 1;
+    const frVoice = window.speechSynthesis.getVoices().find(v => v.lang.startsWith('fr'));
     if (frVoice) utt.voice = frVoice;
     window.speechSynthesis.speak(utt);
   }, [ttsEnabled]);
 
-  /* ── Send message ───────────────────────────────────────────────── */
+  /* ── Send message ── */
   const sendMessage = useCallback(async (msgText) => {
     const msg = (msgText !== undefined ? msgText : input).trim();
     if (!msg || loading) return;
     setInput('');
     setMessages(p => [...p, { role: 'user', content: msg }]);
     setLoading(true);
-
     let botReply = null;
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         const r = await fetch(`${AGENT}/chat`, {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({
-            session_id: user?.id ? `${user.id}-${user.role}` : `guest-${Date.now()}`,
-            message:    msg,
-          }),
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: user?.id ? `${user.id}-${user.role}` : `guest-${Date.now()}`, message: msg }),
           signal: AbortSignal.timeout(8000),
         });
         if (r.ok) {
           const data = await r.json();
-          botReply = {
-            role:     'bot',
-            content:  data.response || data.reponse || 'Réponse reçue.',
-            products: data.produits_rag || [],
-          };
+          botReply = { role: 'bot', content: data.response || data.reponse || 'Réponse reçue.', products: data.produits_rag || [] };
           break;
         }
       } catch { /* retry */ }
     }
-
     if (!botReply) botReply = { role: 'bot', content: buildFallback(msg) };
-
     setMessages(p => [...p, botReply]);
     speak(botReply.content);
     setLoading(false);
@@ -250,26 +210,13 @@ const FloatingAgent = ({ user }) => {
 
   const handleSubmit = (e) => { e.preventDefault(); sendMessage(); };
 
-  /* ── Size cycle ─────────────────────────────────────────────────── */
   const cycleSize = () => {
     const order = ['compact', 'normal', 'large'];
     setSize(s => order[(order.indexOf(s) + 1) % order.length]);
   };
 
-  /* ── Status ─────────────────────────────────────────────────────── */
   const statusColor = agentOnline ? '#22c55e' : ORANGE;
   const statusLabel = agentOnline ? 'En ligne' : 'Mode local';
-
-  /* ── Computed positions ─────────────────────────────────────────── */
-  const btnStyle = btnPos.x !== null
-    ? { position: 'fixed', left: btnPos.x, top: btnPos.y, right: 'auto', bottom: 'auto' }
-    : { position: 'fixed', right: 28, bottom: 28 };
-
-  const { width: winW, height: winH } = SIZES[size];
-
-  const winStyle = winPos.x !== null
-    ? { position: 'fixed', left: winPos.x, top: winPos.y, right: 'auto', bottom: 'auto', width: winW, height: winH }
-    : { position: 'fixed', right: 28, bottom: 96, width: winW, height: winH };
 
   return (
     <>
@@ -277,10 +224,16 @@ const FloatingAgent = ({ user }) => {
       <div
         ref={btnRef}
         className="floating-agent-btn"
-        style={{ ...btnStyle, cursor: btnDragRef.current ? 'grabbing' : 'grab', zIndex: 9999 }}
-        onMouseDown={startDragBtn}
-        onTouchStart={startDragBtn}
-        onClick={() => { if (!btnDragRef.current) setOpen(o => !o); }}
+        style={{
+          ...btnStylePos,
+          cursor: dragging.current ? 'grabbing' : 'grab',
+          zIndex: 9999,
+          userSelect: 'none',
+          width: BTN_SIZE, height: BTN_SIZE,
+        }}
+        onMouseDown={startDrag}
+        onTouchStart={startDrag}
+        onClick={handleBtnClick}
         title="Sougui Sales Agent — cliquer ou déplacer"
       >
         <div className="pulse-ring" />
@@ -293,20 +246,25 @@ const FloatingAgent = ({ user }) => {
       {/* ── Chat window ── */}
       {open && (
         <div
-          ref={winRef}
           className="floating-agent-window anim-fade-up"
-          style={{ ...winStyle, zIndex: 9998, display: 'flex', flexDirection: 'column', transition: 'width 0.2s, height 0.2s' }}
+          style={{
+            ...winStylePos,
+            width: winW, height: winH,
+            zIndex: 9998, display: 'flex', flexDirection: 'column',
+            transition: 'width 0.2s, height 0.2s',
+          }}
         >
-          {/* Header — draggable */}
+          {/* Header */}
           <div
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '12px 14px', cursor: 'move', flexShrink: 0,
               background: `linear-gradient(135deg, ${ORANGE}22, var(--bg-surface))`,
-              borderBottom: '1px solid var(--border)', userSelect: 'none', borderRadius: '16px 16px 0 0',
+              borderBottom: '1px solid var(--border)', userSelect: 'none',
+              borderRadius: '16px 16px 0 0',
             }}
-            onMouseDown={startDragWin}
-            onTouchStart={startDragWin}
+            onMouseDown={startDrag}
+            onTouchStart={startDrag}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{
@@ -325,45 +283,20 @@ const FloatingAgent = ({ user }) => {
               </div>
             </div>
 
-            {/* Header actions */}
             <div style={{ display: 'flex', gap: 5 }}>
-              {/* TTS toggle */}
-              <button
-                onClick={(e) => { e.stopPropagation(); setTtsEnabled(t => !t); }}
-                style={{
-                  width: 26, height: 26, borderRadius: '50%', border: 'none', cursor: 'pointer',
-                  background: ttsEnabled ? `${ORANGE}20` : 'var(--bg-hover)',
-                  color: ttsEnabled ? ORANGE : 'var(--text-muted)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-                title={ttsEnabled ? 'Désactiver la voix' : 'Activer la voix'}
-              >
+              <button onClick={(e) => { e.stopPropagation(); setTtsEnabled(t => !t); }}
+                style={{ width: 26, height: 26, borderRadius: '50%', border: 'none', cursor: 'pointer', background: ttsEnabled ? `${ORANGE}20` : 'var(--bg-hover)', color: ttsEnabled ? ORANGE : 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                title={ttsEnabled ? 'Désactiver la voix' : 'Activer la voix'}>
                 {ttsEnabled ? <Volume2 size={12} /> : <VolumeX size={12} />}
               </button>
-
-              {/* Resize cycle */}
-              <button
-                onClick={(e) => { e.stopPropagation(); cycleSize(); }}
-                style={{
-                  width: 26, height: 26, borderRadius: '50%', border: 'none', cursor: 'pointer',
-                  background: 'var(--bg-hover)', color: 'var(--text-muted)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-                title={`Taille : ${size} → cliquer pour changer`}
-              >
+              <button onClick={(e) => { e.stopPropagation(); cycleSize(); }}
+                style={{ width: 26, height: 26, borderRadius: '50%', border: 'none', cursor: 'pointer', background: 'var(--bg-hover)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                title={`Taille : ${size}`}>
                 {size === 'large' ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
               </button>
-
-              {/* Close */}
-              <button
-                onClick={(e) => { e.stopPropagation(); setOpen(false); }}
-                style={{
-                  width: 26, height: 26, borderRadius: '50%', border: 'none', cursor: 'pointer',
-                  background: 'var(--bg-hover)', color: 'var(--text-muted)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-                title="Réduire"
-              >
+              <button onClick={(e) => { e.stopPropagation(); setOpen(false); }}
+                style={{ width: 26, height: 26, borderRadius: '50%', border: 'none', cursor: 'pointer', background: 'var(--bg-hover)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                title="Réduire">
                 <X size={12} />
               </button>
             </div>
@@ -381,10 +314,7 @@ const FloatingAgent = ({ user }) => {
                       ? { background: 'linear-gradient(135deg, var(--blue), var(--blue-dim))' }
                       : { background: `${ORANGE}18`, border: `1px solid ${ORANGE}30` })
                   }}>
-                    {m.role === 'user'
-                      ? <User size={12} style={{ color: '#fff' }} />
-                      : <Bot  size={12} style={{ color: ORANGE }} />
-                    }
+                    {m.role === 'user' ? <User size={12} style={{ color: '#fff' }} /> : <Bot size={12} style={{ color: ORANGE }} />}
                   </div>
                   <div>
                     <div style={{
@@ -398,11 +328,7 @@ const FloatingAgent = ({ user }) => {
                     {m.products?.length > 0 && (
                       <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
                         {m.products.slice(0, 3).map((p, pi) => (
-                          <div key={pi} style={{
-                            padding: '7px 10px', borderRadius: 8,
-                            background: `${ORANGE}08`, border: `1px solid ${ORANGE}20`,
-                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                          }}>
+                          <div key={pi} style={{ padding: '7px 10px', borderRadius: 8, background: `${ORANGE}08`, border: `1px solid ${ORANGE}20`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
                               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)' }}>{p.nom}</div>
                               <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{p.categorie}</div>
@@ -419,22 +345,12 @@ const FloatingAgent = ({ user }) => {
 
             {loading && (
               <div style={{ display: 'flex', gap: 8 }}>
-                <div style={{
-                  width: 26, height: 26, borderRadius: '50%',
-                  background: `${ORANGE}18`, border: `1px solid ${ORANGE}30`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                }}>
+                <div style={{ width: 26, height: 26, borderRadius: '50%', background: `${ORANGE}18`, border: `1px solid ${ORANGE}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Bot size={12} style={{ color: ORANGE }} />
                 </div>
-                <div style={{
-                  padding: '10px 12px', borderRadius: 12, background: 'var(--bg-surface)',
-                  border: '1px solid var(--border)', display: 'flex', gap: 4, alignItems: 'center',
-                }}>
+                <div style={{ padding: '10px 12px', borderRadius: 12, background: 'var(--bg-surface)', border: '1px solid var(--border)', display: 'flex', gap: 4, alignItems: 'center' }}>
                   {[0, 1, 2].map(i => (
-                    <div key={i} style={{
-                      width: 6, height: 6, borderRadius: '50%', background: ORANGE,
-                      animation: 'pulseDot 1.2s infinite', animationDelay: `${i * 0.2}s`,
-                    }} />
+                    <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: ORANGE, animation: 'pulseDot 1.2s infinite', animationDelay: `${i * 0.2}s` }} />
                   ))}
                 </div>
               </div>
@@ -446,11 +362,7 @@ const FloatingAgent = ({ user }) => {
           <div style={{ padding: '6px 12px', display: 'flex', gap: 5, overflow: 'auto', flexShrink: 0 }} className="hide-scroll">
             {QUICK.map(q => (
               <button key={q} onClick={() => sendMessage(q)}
-                style={{
-                  flexShrink: 0, padding: '4px 10px', borderRadius: 9999,
-                  background: 'var(--bg-hover)', border: '1px solid var(--border)',
-                  fontSize: 10, color: 'var(--text-secondary)', cursor: 'pointer', whiteSpace: 'nowrap',
-                }}>
+                style={{ flexShrink: 0, padding: '4px 10px', borderRadius: 9999, background: 'var(--bg-hover)', border: '1px solid var(--border)', fontSize: 10, color: 'var(--text-secondary)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                 {q}
               </button>
             ))}
@@ -459,48 +371,18 @@ const FloatingAgent = ({ user }) => {
           {/* Input form */}
           <form onSubmit={handleSubmit}
             style={{ display: 'flex', gap: 8, padding: '10px 12px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface)', flexShrink: 0, borderRadius: '0 0 16px 16px' }}>
-
-            {/* Mic button — click to start, click again to stop */}
-            <button type="button"
-              onClick={listening ? stopListening : startListening}
-              style={{
-                width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-                background: listening ? `${ORANGE}25` : 'var(--bg-hover)',
-                border: `1px solid ${listening ? ORANGE : 'var(--border)'}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', transition: 'all 0.2s',
-                animation: listening ? 'pulseDot 1s infinite' : 'none',
-              }}
-              title={listening ? 'Cliquer pour arrêter et envoyer' : 'Cliquer pour parler'}
-            >
-              {listening
-                ? <MicOff size={14} style={{ color: ORANGE }} />
-                : <Mic    size={14} style={{ color: 'var(--text-muted)' }} />
-              }
+            <button type="button" onClick={listening ? stopListening : startListening}
+              style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0, background: listening ? `${ORANGE}25` : 'var(--bg-hover)', border: `1px solid ${listening ? ORANGE : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', animation: listening ? 'pulseDot 1s infinite' : 'none' }}
+              title={listening ? 'Cliquer pour arrêter' : 'Cliquer pour parler'}>
+              {listening ? <MicOff size={14} style={{ color: ORANGE }} /> : <Mic size={14} style={{ color: 'var(--text-muted)' }} />}
             </button>
 
-            <input
-              type="text"
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              placeholder={listening ? '🎤 Écoute en cours... (cliquer micro pour envoyer)' : 'Écrivez votre message...'}
-              className="s-input"
-              style={{ flex: 1, padding: '8px 12px', fontSize: 12 }}
-            />
+            <input type="text" value={input} onChange={e => setInput(e.target.value)}
+              placeholder={listening ? '🎤 Écoute en cours...' : 'Écrivez votre message...'}
+              className="s-input" style={{ flex: 1, padding: '8px 12px', fontSize: 12 }} />
 
-            {/* Send button — has id for auto-send from voice */}
-            <button
-              id="agent-send-btn"
-              type="submit"
-              disabled={loading || !input.trim()}
-              style={{
-                width: 36, height: 36, borderRadius: '50%', border: 'none', cursor: 'pointer', flexShrink: 0,
-                background: (!loading && input.trim()) ? `linear-gradient(135deg, ${ORANGE}, #dc2626)` : 'var(--bg-hover)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                opacity: (loading || !input.trim()) ? 0.5 : 1, transition: 'all 0.2s',
-                boxShadow: input.trim() ? `0 4px 16px ${ORANGE}40` : 'none',
-              }}
-            >
+            <button id="agent-send-btn" type="submit" disabled={loading || !input.trim()}
+              style={{ width: 36, height: 36, borderRadius: '50%', border: 'none', cursor: 'pointer', flexShrink: 0, background: (!loading && input.trim()) ? `linear-gradient(135deg, ${ORANGE}, #dc2626)` : 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: (loading || !input.trim()) ? 0.5 : 1, transition: 'all 0.2s', boxShadow: input.trim() ? `0 4px 16px ${ORANGE}40` : 'none' }}>
               <Send size={14} style={{ color: '#fff' }} />
             </button>
           </form>
