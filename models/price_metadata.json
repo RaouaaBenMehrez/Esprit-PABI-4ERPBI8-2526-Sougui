@@ -1,0 +1,1 @@
+{"r2": 0.092, "n_produits": 46, "categories": ["Arts de la table", "Arts de la table, Shop", "Couffins & Foutas, Shop", "Déco", "Jeux", "Non catalogué"], "matieres": ["Autre", "Bois", "Bois Olivier", "Cuivre"], "saisons": ["Automne", "Hiver", "Printemps", "Été"], "elasticites": {}, "features": ["log_prix", "cat_enc", "mat_enc", "sai_enc", "mois", "trimestre"]}

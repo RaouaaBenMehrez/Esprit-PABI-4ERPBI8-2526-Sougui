@@ -6,10 +6,15 @@ import {
 import { Send, Bot, User, Loader2, BrainCircuit, Search } from 'lucide-react';
 import AppLayout from '../layout/AppLayout';
 import ProfileSettings from '../profile/ProfileSettings';
+import DeliveryAnalysis   from '../predictions/DeliveryAnalysis';
+import B2BDemandPrediction from '../predictions/B2BDemandPrediction';
+import PriceSimulator      from '../predictions/PriceSimulator';
+import PowerBIEmbed        from '../powerbi/PowerBIEmbed';
 
 const API     = 'http://127.0.0.1:5000/api';
 const AGENT   = 'http://localhost:8000';
-const PBI_BASE = 'https://app.powerbi.com/reportEmbed?reportId=fa5fa437-6265-43ec-a047-a6802e6f49c4&autoAuth=true&ctid=604f1a96-cbe8-43f8-abbf-f8eaf5d85730';
+const PBI_COMMERCIAL_ID = 'c041af2f-3e58-4613-a5f3-d4e8fa3b46a3';
+const PBI_BASE = `https://app.powerbi.com/reportEmbed?reportId=${PBI_COMMERCIAL_ID}&autoAuth=true&ctid=604f1a96-cbe8-43f8-abbf-f8eaf5d85730`;
 const GREEN   = '#059669';
 
 const NAV = [
@@ -17,6 +22,14 @@ const NAV = [
     { id: 'cm-overview', label: 'Vue Commerciale', icon: '💼' },
     { id: 'cm-ventes',   label: 'Transactions',    icon: '📋' },
     { id: 'cm-clients',  label: 'Clients B2B',     icon: '🤝' },
+  ]},
+  { title: 'Tableau de Bord', items: [
+    { id: 'cm-powerbi',  label: 'Power BI Report',   icon: '📊', badge: 'PBI' },
+  ]},
+  { title: 'Prédictions ML', items: [
+    { id: 'cm-delivery',  label: 'Delivery Analysis', icon: '🗺️', badge: 'ML' },
+    { id: 'cm-b2b',      label: 'B2B Demand',         icon: '📈', badge: 'ML' },
+    { id: 'cm-price',    label: 'Price Simulator',    icon: '💲', badge: 'ML' },
   ]},
   { title: 'Intelligence IA', items: [
     { id: 'cm-regression', label: 'RF — Régression CA', icon: '📈', badge: 'ML' },
@@ -583,6 +596,28 @@ const CommercialDashboard = ({ user, onLogout, onUpdateUser }) => {
             <AgentChat user={user} />
           </div>
         )}
+
+        {/* ── Power BI dédié Commercial ── */}
+        {page === 'cm-powerbi' && (
+          <div style={{ padding:'40px' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:24 }}>
+              <div style={{ width:48, height:48, borderRadius:14, background:'rgba(242,200,17,0.12)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="2" y="14" width="4" height="8" rx="1" fill="#f2c811"/><rect x="8" y="9" width="4" height="13" rx="1" fill="#f2c811" opacity=".8"/><rect x="14" y="4" width="4" height="18" rx="1" fill="#f2c811" opacity=".6"/><rect x="20" y="2" width="2" height="20" rx="1" fill="#f2c811" opacity=".4"/></svg>
+              </div>
+              <div>
+                <h1 style={{ fontSize:28, fontWeight:900, color:'var(--text-primary)' }}>Power BI Report</h1>
+                <p style={{ fontSize:13, color:'var(--text-muted)' }}>Rapport interactif Commercial · Sans onglets ni panneau filtres</p>
+              </div>
+              <div style={{ marginLeft:'auto', padding:'4px 12px', borderRadius:999, background:'rgba(242,200,17,0.1)', border:'1px solid rgba(242,200,17,0.3)', fontSize:11, fontWeight:700, color:'#f2c811' }}>● LIVE</div>
+            </div>
+            <PowerBIEmbed reportId={PBI_COMMERCIAL_ID} title="Rapport Commercial" />
+          </div>
+        )}
+
+        {/* ── Prédictions ML ── */}
+        {page === 'cm-delivery' && <div style={{ padding:'40px' }}><DeliveryAnalysis /></div>}
+        {page === 'cm-b2b'     && <div style={{ padding:'40px' }}><B2BDemandPrediction /></div>}
+        {page === 'cm-price'   && <div style={{ padding:'40px' }}><PriceSimulator /></div>}
 
         {page === 'settings' && (
           <div style={{ padding: '40px' }}>

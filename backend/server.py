@@ -186,7 +186,7 @@ def ensure_face_auth_schema():
         logger.warning(f'[Setup] Erreur schéma DB: {e}')
 
 
-# ─── Configuration PostgreSQL ────────────────────────────────────────────────
+# ─── Configuration PostgreSQL (app DB) ───────────────────────────────────────
 DB_CONFIG = {
     "host":     os.getenv("PG_HOST",     "localhost"),
     "port":     int(os.getenv("PG_PORT", 5432)),
@@ -195,10 +195,36 @@ DB_CONFIG = {
     "password": os.getenv("PG_PASSWORD", "postgres"),
 }
 
+# ─── Configuration PostgreSQL (DWH Constellation) ────────────────────────────
+DWH_CONFIG = {
+    "host":     os.getenv("DWH_HOST",     "localhost"),
+    "port":     int(os.getenv("DWH_PORT", 5432)),
+    "dbname":   os.getenv("DWH_DB",       "Sougui_DWH"),
+    "user":     os.getenv("DWH_USER",     "postgres"),
+    "password": os.getenv("DWH_PASSWORD", "postgres"),
+}
+
 def get_db():
     conn = psycopg2.connect(**DB_CONFIG)
     conn.autocommit = False
     return conn
+
+def get_dwh():
+    """Connexion vers le Data Warehouse Constellation Sougui_DWH."""
+    conn = psycopg2.connect(**DWH_CONFIG)
+    conn.autocommit = True
+    return conn
+
+def fetch_dwh(query, params=None):
+    """Exécute une requête analytique sur le DWH et retourne un DataFrame."""
+    conn = get_dwh()
+    try:
+        return pd.read_sql_query(query, conn, params=params)
+    except Exception as e:
+        logger.warning(f'[DWH] Requete echouee: {e}')
+        return pd.DataFrame()
+    finally:
+        conn.close()
 
 def fetch_df(query, params=None):
     conn = get_db()
@@ -765,89 +791,925 @@ def test_email():
     return jsonify({'success': False, 'message': 'Échec — vérifiez la config Gmail'}), 500
 
 
-# ─── Dashboard ───────────────────────────────────────────────────────────────
+# ─── Dashboard (données réelles DWH Constellation) ───────────────────────────
 @app.route('/api/dashboard', methods=['GET'])
 def get_dashboard_data():
+    try:
+        # ── Fact_Vente × Dim_Canal_Distribution ──────────────────────────────
+        df = fetch_dwh("""
+            SELECT
+                fv.revenue,
+                fv.montant_ht,
+                fv.montant_ttc,
+                fv.quantite,
+                fv.date_key,
+                COALESCE(cd.type_canal, 'B2C') AS type_canal,
+                COALESCE(cd.libelle_canal, 'Autre') AS canal
+            FROM fact_vente fv
+            LEFT JOIN dim_canal_distribution cd ON fv.canal_key = cd.canal_key
+            WHERE fv.revenue > 0
+        """)
 
-    sales_df = fetch_df("SELECT amount, channel, date FROM sales")
+        if df.empty:
+            return jsonify({"error": "Aucune donnee DWH"}), 204
 
-    if sales_df.empty:
-        return jsonify({"error": "Aucune donnée de vente"}), 204
+        # Convertir date_key (YYYYMMDD) en datetime
+        df['date'] = pd.to_datetime(df['date_key'].astype(str), format='%Y%m%d', errors='coerce')
+        df = df.dropna(subset=['date'])
 
-    total_ca     = float(sales_df['amount'].sum())
-    total_orders = len(sales_df)
-    b2b_revenue  = float(sales_df[sales_df['channel'] == 'B2B']['amount'].sum())
-    b2c_revenue  = float(sales_df[sales_df['channel'].isin(['E-commerce', 'Vente Physique'])]['amount'].sum())
+        # ── KPIs globaux ─────────────────────────────────────────────────────
+        total_ca     = float(df['revenue'].sum())
+        total_orders = len(df)
+        b2b_df       = df[df['type_canal'] == 'B2B']
+        b2c_df       = df[df['type_canal'] == 'B2C']
+        b2b_revenue  = float(b2b_df['revenue'].sum())
+        b2c_revenue  = float(b2c_df['revenue'].sum())
 
-    sales_df['date'] = pd.to_datetime(sales_df['date'])
-    monthly_sa = (
-        sales_df.set_index('date')
-                .resample('ME')['amount']
-                .sum()
-                .reset_index()
-    )
-    monthly_sa['name'] = monthly_sa['date'].dt.strftime('%b %Y')
-    main_chart = monthly_sa[['name', 'amount']].rename(columns={'amount': 'value'}).to_dict('records')
+        # ── Évolution CA mensuelle ────────────────────────────────────────────
+        monthly = (
+            df.set_index('date')
+              .resample('ME')['revenue']
+              .sum()
+              .reset_index()
+        )
+        monthly['name'] = monthly['date'].dt.strftime('%b %Y')
+        main_chart = monthly[['name', 'revenue']].rename(columns={'revenue': 'value'}).to_dict('records')
 
-    canal_summary = sales_df.groupby('channel')['amount'].sum().reset_index()
-    canal_summary.columns = ['name', 'value']
-    canal_data = canal_summary.to_dict('records')
+        # ── Répartition par canal ─────────────────────────────────────────────
+        canal_data = (
+            df.groupby('canal')['revenue']
+              .sum()
+              .reset_index()
+              .rename(columns={'canal': 'name', 'revenue': 'value'})
+              .sort_values('value', ascending=False)
+              .to_dict('records')
+        )
 
-    season_df = sales_df.copy()
-    season_df['month_name'] = season_df['date'].dt.strftime('%B')
-    seasonality = (
-        season_df.groupby('month_name')['amount']
-                 .sum()
-                 .reset_index()
-                 .sort_values('amount', ascending=False)
-    )
-    seasonality.columns = ['name', 'value']
-    season_data = seasonality.head(5).to_dict('records')
+        # ── Saisonnalité (top 5 mois par CA) ─────────────────────────────────
+        df['month_name'] = df['date'].dt.strftime('%B')
+        season_data = (
+            df.groupby('month_name')['revenue']
+              .sum()
+              .reset_index()
+              .rename(columns={'month_name': 'name', 'revenue': 'value'})
+              .sort_values('value', ascending=False)
+              .head(5)
+              .to_dict('records')
+        )
 
-    ratio = round(b2b_revenue / total_ca, 2) if total_ca > 0 else 0
+        ratio = round(b2b_revenue / total_ca, 2) if total_ca > 0 else 0
 
-    return jsonify({
-        "kpis": [
-            {"label": "CA Total",          "value": f"{total_ca/1000:,.1f}",     "unit": "K DT",  "icon": "Gift"},
-            {"label": "Transactions",      "value": str(total_orders),           "unit": "",      "icon": "Handshake"},
-            {"label": "Revenue B2B",       "value": f"{b2b_revenue/1000:,.2f}",  "unit": "K DT",  "icon": "Users"},
-            {"label": "Revenue B2C",       "value": f"{b2c_revenue/1000:,.2f}",  "unit": "K DT",  "icon": "ShieldCheck"},
-        ],
-        "total_ca":    total_ca,
-        "ratio":       ratio,
-        "mainChart":   main_chart,
-        "canalData":   canal_data,
-        "seasonality": season_data,
-        "insights": [
-            {"label": "Pic Saisonnier",  "text": f"Meilleur mois : {season_data[0]['name']} ({season_data[0]['value']:,.0f} DT)."},
-            {"label": "Performance",     "text": f"B2C représente {(b2c_revenue/total_ca*100):.1f}% de l'activité."},
-            {"label": "Alerte",          "text": f"Ratio dépendance B2B : {ratio}. Diversifiez vers B2C."}
-        ]
-    })
+        return jsonify({
+            "source": "Sougui_DWH",
+            "kpis": [
+                {"label": "CA Total",     "value": f"{total_ca/1000:,.1f}",    "unit": "K DT", "icon": "Gift"},
+                {"label": "Transactions", "value": str(total_orders),          "unit": "",     "icon": "Handshake"},
+                {"label": "Revenue B2B",  "value": f"{b2b_revenue/1000:,.2f}", "unit": "K DT", "icon": "Users"},
+                {"label": "Revenue B2C",  "value": f"{b2c_revenue/1000:,.2f}", "unit": "K DT", "icon": "ShieldCheck"},
+            ],
+            "total_ca":    total_ca,
+            "ratio":       ratio,
+            "mainChart":   main_chart,
+            "canalData":   canal_data,
+            "seasonality": season_data,
+            "insights": [
+                {"label": "Pic Saisonnier", "text": f"Meilleur mois : {season_data[0]['name']} ({season_data[0]['value']:,.0f} DT)."},
+                {"label": "Performance",    "text": f"B2C represente {(b2c_revenue/total_ca*100):.1f}% de l'activite."},
+                {"label": "Alerte",         "text": f"Ratio dependance B2B : {ratio:.2f}. Diversifiez vers B2C."}
+            ]
+        })
+    except Exception as e:
+        logger.error(f'[Dashboard DWH] {e}')
+        return jsonify({"error": str(e)}), 500
 
-# ─── Ventes ──────────────────────────────────────────────────────────────────
+
+# ─── Ventes (Fact_Vente DWH) ─────────────────────────────────────────────────
 @app.route('/api/sales', methods=['GET'])
 def get_sales():
-    rows = fetch_rows(
-        "SELECT id, date::text, amount, channel, client_id, profit FROM sales ORDER BY date DESC LIMIT 200"
-    )
-    return jsonify([dict(r) for r in rows])
+    try:
+        df = fetch_dwh("""
+            SELECT
+                fv.vente_key          AS id,
+                fv.date_key,
+                fv.revenue            AS amount,
+                COALESCE(cd.libelle_canal, 'Autre') AS channel,
+                fv.client_key         AS client_id,
+                fv.montant_ht         AS profit,
+                fv.quantite,
+                fv.montant_ttc
+            FROM fact_vente fv
+            LEFT JOIN dim_canal_distribution cd ON fv.canal_key = cd.canal_key
+            WHERE fv.revenue > 0
+            ORDER BY fv.date_key DESC
+            LIMIT 300
+        """)
+        if df.empty:
+            return jsonify([])
+        df['date'] = pd.to_datetime(df['date_key'].astype(str), format='%Y%m%d', errors='coerce').dt.strftime('%Y-%m-%d')
+        df = df.drop(columns=['date_key'])
+        return jsonify(df.where(pd.notnull(df), None).to_dict('records'))
+    except Exception as e:
+        logger.error(f'[Sales DWH] {e}')
+        return jsonify([])
 
-# ─── Clients ─────────────────────────────────────────────────────────────────
+
+# ─── Clients (Dim_Client DWH) ────────────────────────────────────────────────
 @app.route('/api/clients', methods=['GET'])
 def get_clients():
-    rows = fetch_rows(
-        "SELECT id, name, type, total_spent, rfm_segment FROM clients ORDER BY total_spent DESC"
-    )
-    return jsonify([dict(r) for r in rows])
+    try:
+        df = fetch_dwh("""
+            SELECT
+                dc.client_key         AS id,
+                dc.nom_client         AS name,
+                dc.type_client        AS type,
+                dc.ville,
+                dc.gouvernorat,
+                dc.secteur_activite,
+                dc.mode_paiement,
+                COALESCE(SUM(fv.revenue), 0) AS total_spent
+            FROM dim_client dc
+            LEFT JOIN fact_vente fv ON dc.client_key = fv.client_key
+            GROUP BY dc.client_key, dc.nom_client, dc.type_client,
+                     dc.ville, dc.gouvernorat, dc.secteur_activite, dc.mode_paiement
+            ORDER BY total_spent DESC
+        """)
+        if df.empty:
+            return jsonify([])
+        # Simuler rfm_segment depuis total_spent
+        def rfm_label(spent):
+            if spent > 20000: return 'Champions'
+            if spent > 5000:  return 'Clients Fideles'
+            if spent > 1000:  return 'Actifs'
+            if spent > 100:   return 'Nouveaux Clients'
+            return 'Clients a Risque'
+        df['rfm_segment'] = df['total_spent'].apply(rfm_label)
+        return jsonify(df.where(pd.notnull(df), None).to_dict('records'))
+    except Exception as e:
+        logger.error(f'[Clients DWH] {e}')
+        return jsonify([])
 
-# ─── Produits ────────────────────────────────────────────────────────────────
+
+# ─── Produits (Dim_Produit DWH) ──────────────────────────────────────────────
 @app.route('/api/products', methods=['GET'])
 def get_products():
-    rows = fetch_rows(
-        "SELECT id, code, name, category, price, stock FROM products WHERE price > 0 AND is_active = TRUE"
-    )
-    return jsonify([dict(r) for r in rows])
+    try:
+        df = fetch_dwh("""
+            SELECT
+                dp.produit_key   AS id,
+                dp.code_produit  AS code,
+                dp.libelle       AS name,
+                dp.categorie     AS category,
+                dp.prix_vente    AS price,
+                COALESCE(SUM(fv.quantite), 0) AS total_sold
+            FROM dim_produit dp
+            LEFT JOIN fact_vente fv ON dp.produit_key = fv.produit_key
+            WHERE dp.prix_vente > 0
+            GROUP BY dp.produit_key, dp.code_produit, dp.libelle, dp.categorie, dp.prix_vente
+            ORDER BY total_sold DESC
+        """)
+        if df.empty:
+            return jsonify([])
+        df['stock'] = (df['total_sold'] > 0).astype(int) * 10  # stock estimé
+        df['is_active'] = True
+        return jsonify(df.where(pd.notnull(df), None).to_dict('records'))
+    except Exception as e:
+        logger.error(f'[Products DWH] {e}')
+        return jsonify([])
+
+
+# ─── DWH Stats (endpoint diagnostic) ────────────────────────────────────────
+@app.route('/api/dwh/stats', methods=['GET'])
+def get_dwh_stats():
+    """Expose les statistiques globales du Data Warehouse Constellation."""
+    try:
+        stats = {}
+
+        # CA total & nb transactions
+        r = fetch_dwh("SELECT COUNT(*) AS nb, SUM(revenue) AS ca FROM fact_vente WHERE revenue > 0")
+        stats['transactions'] = int(r['nb'].iloc[0]) if not r.empty else 0
+        stats['ca_total']     = float(r['ca'].iloc[0]) if not r.empty else 0
+
+        # Nb achats fournisseurs
+        r2 = fetch_dwh("SELECT COUNT(*) AS nb, SUM(revenue) AS total FROM fact_achat")
+        stats['achats']       = int(r2['nb'].iloc[0]) if not r2.empty else 0
+        stats['achats_total'] = float(r2['total'].iloc[0]) if not r2.empty else 0
+
+        # Nb clients et fournisseurs
+        r3 = fetch_dwh("SELECT COUNT(*) AS nb FROM dim_client")
+        stats['clients'] = int(r3['nb'].iloc[0]) if not r3.empty else 0
+
+        r4 = fetch_dwh("SELECT COUNT(*) AS nb FROM dim_fournisseur")
+        stats['fournisseurs'] = int(r4['nb'].iloc[0]) if not r4.empty else 0
+
+        # Top 5 clients B2B par CA
+        top_b2b = fetch_dwh("""
+            SELECT dc.nom_client AS name, SUM(fv.revenue) AS ca
+            FROM fact_vente fv
+            JOIN dim_client dc ON fv.client_key = dc.client_key
+            WHERE dc.type_client = 'B2B' AND fv.revenue > 0
+            GROUP BY dc.nom_client
+            ORDER BY ca DESC LIMIT 5
+        """)
+        stats['top_clients_b2b'] = top_b2b.to_dict('records') if not top_b2b.empty else []
+
+        # Top 5 produits vendus
+        top_prod = fetch_dwh("""
+            SELECT dp.libelle AS name, dp.categorie AS category,
+                   SUM(fv.quantite) AS qty_sold, SUM(fv.revenue) AS ca
+            FROM fact_vente fv
+            JOIN dim_produit dp ON fv.produit_key = dp.produit_key
+            WHERE fv.revenue > 0 AND dp.produit_key > 0
+            GROUP BY dp.libelle, dp.categorie
+            ORDER BY ca DESC LIMIT 5
+        """)
+        stats['top_produits'] = top_prod.to_dict('records') if not top_prod.empty else []
+
+        return jsonify({"source": "Sougui_DWH", "stats": stats})
+    except Exception as e:
+        logger.error(f'[DWH Stats] {e}')
+        return jsonify({"error": str(e)}), 500
+
+
+# ─── RFM Segmentation depuis DWH ─────────────────────────────────────────────
+@app.route('/api/dwh/rfm', methods=['GET'])
+def get_dwh_rfm():
+    """Calcule la segmentation RFM reelle depuis fact_vente + dim_client."""
+    try:
+        df = fetch_dwh("""
+            SELECT
+                dc.client_key,
+                dc.nom_client         AS nom,
+                dc.type_client        AS type,
+                dc.gouvernorat,
+                COUNT(fv.vente_key)   AS frequence,
+                SUM(fv.revenue)       AS montant_total,
+                MAX(fv.date_key)      AS derniere_vente
+            FROM fact_vente fv
+            JOIN dim_client dc ON fv.client_key = dc.client_key
+            WHERE fv.revenue > 0
+            GROUP BY dc.client_key, dc.nom_client, dc.type_client, dc.gouvernorat
+            HAVING SUM(fv.revenue) > 0
+            ORDER BY montant_total DESC
+        """)
+        if df.empty:
+            return jsonify([])
+
+        # Calcul recence (jours depuis derniere vente)
+        today_key = int(pd.Timestamp.now().strftime('%Y%m%d'))
+        df['recence'] = df['derniere_vente'].apply(
+            lambda k: max(0, today_key - int(k)) if k else 999
+        )
+        df['panier_moyen'] = (df['montant_total'] / df['frequence']).round(2)
+
+        # Segmentation simplifiee
+        def segment(row):
+            m, f = row['montant_total'], row['frequence']
+            if m > 20000 and f > 5: return 'Champions'
+            if m > 5000 and f > 3:  return 'Clients Fideles'
+            if m > 1000:            return 'Actifs'
+            if f == 1:              return 'Nouveaux'
+            return 'A Risque'
+        df['segment'] = df.apply(segment, axis=1)
+
+        return jsonify({
+            "source": "Sougui_DWH",
+            "total": len(df),
+            "segments": df['segment'].value_counts().to_dict(),
+            "clients": df.where(pd.notnull(df), None).to_dict('records')
+        })
+    except Exception as e:
+        logger.error(f'[RFM DWH] {e}')
+        return jsonify({"error": str(e)}), 500
+
+
+# ─── BCG Matrix depuis DWH ───────────────────────────────────────────────────
+@app.route('/api/dwh/bcg', methods=['GET'])
+def get_dwh_bcg():
+    """Calcule la matrice BCG produits (part de marche vs croissance CA)."""
+    try:
+        df = fetch_dwh("""
+            SELECT
+                dp.produit_key,
+                dp.libelle        AS produit,
+                dp.categorie,
+                dp.prix_vente,
+                SUM(fv.quantite)  AS qty_totale,
+                SUM(fv.revenue)   AS ca_total,
+                COUNT(fv.vente_key) AS nb_transactions
+            FROM dim_produit dp
+            JOIN fact_vente fv ON dp.produit_key = fv.produit_key
+            WHERE fv.revenue > 0 AND dp.produit_key > 0
+            GROUP BY dp.produit_key, dp.libelle, dp.categorie, dp.prix_vente
+            HAVING SUM(fv.revenue) > 0
+            ORDER BY ca_total DESC
+        """)
+        if df.empty:
+            return jsonify([])
+
+        total_ca = df['ca_total'].sum()
+        median_ca = df['ca_total'].median()
+        median_qty = df['qty_totale'].median()
+
+        def bcg_quadrant(row):
+            high_share  = row['ca_total']  > median_ca
+            high_growth = row['qty_totale'] > median_qty
+            if high_share and high_growth:  return 'Stars'
+            if high_share and not high_growth: return 'Cash Cows'
+            if not high_share and high_growth: return 'Question Marks'
+            return 'Dogs'
+
+        df['quadrant']    = df.apply(bcg_quadrant, axis=1)
+        df['part_marche'] = (df['ca_total'] / total_ca * 100).round(2)
+
+        return jsonify({
+            "source": "Sougui_DWH",
+            "total_produits": len(df),
+            "ca_total": float(total_ca),
+            "quadrants": df['quadrant'].value_counts().to_dict(),
+            "produits": df.where(pd.notnull(df), None).to_dict('records')
+        })
+    except Exception as e:
+        logger.error(f'[BCG DWH] {e}')
+        return jsonify({"error": str(e)}), 500
+
+
+# ─── Analyse Logistique depuis DWH ───────────────────────────────────────────
+@app.route('/api/dwh/logistique', methods=['GET'])
+def get_dwh_logistique():
+    """KPIs logistiques : livraisons par gouvernorat, risque par zone."""
+    try:
+        df = fetch_dwh("""
+            SELECT
+                TRIM(INITCAP(dc.gouvernorat)) AS gouvernorat,
+                COUNT(fv.vente_key)  AS nb_commandes,
+                SUM(fv.revenue)      AS ca_zone
+            FROM fact_vente fv
+            JOIN dim_client dc ON fv.client_key = dc.client_key
+            WHERE fv.revenue > 0
+              AND dc.gouvernorat IS NOT NULL
+              AND TRIM(dc.gouvernorat) != ''
+            GROUP BY TRIM(INITCAP(dc.gouvernorat))
+            ORDER BY nb_commandes DESC
+        """)
+        if df.empty:
+            return jsonify({"zones": [], "risk_map": {}})
+
+        # Normaliser côté Python en backup
+        df['gouvernorat'] = df['gouvernorat'].str.strip().str.title()
+
+        # Agréger pour fusionner éventuels doublons résiduels
+        by_gov = df.groupby('gouvernorat').agg(
+            nb_commandes=('nb_commandes', 'sum'),
+            ca_zone=('ca_zone', 'sum'),
+        ).reset_index().sort_values('nb_commandes', ascending=False)
+
+        # Calculer risk_score APRÈS agrégation
+        max_cmds = by_gov['nb_commandes'].max()
+        by_gov['risk_score'] = (1 - by_gov['nb_commandes'] / max_cmds).round(2)
+        by_gov['risk_level'] = by_gov['risk_score'].apply(
+            lambda s: 'Haut' if s > 0.7 else ('Moyen' if s > 0.3 else 'Bas')
+        )
+
+        return jsonify({
+            "source": "Sougui_DWH",
+            "total_zones": len(by_gov),
+            "zones": by_gov.where(pd.notnull(by_gov), None).to_dict('records'),
+            "kpis": {
+                "nb_commandes_total": int(by_gov['nb_commandes'].sum()),
+                "ca_total":           float(by_gov['ca_zone'].sum()),
+                "zones_risque_haut":  int((by_gov['risk_level'] == 'Haut').sum()),
+                "zones_risque_bas":   int((by_gov['risk_level'] == 'Bas').sum()),
+            }
+        })
+    except Exception as e:
+        logger.error(f'[Logistique DWH] {e}')
+        return jsonify({"error": str(e)}), 500
+
+
+# ─── Evolution CA mensuelle (DWH) ────────────────────────────────────────────
+@app.route('/api/dwh/evolution-ca', methods=['GET'])
+def get_dwh_evolution_ca():
+    """Evolution du CA mensuel reel depuis Fact_Vente."""
+    try:
+        df = fetch_dwh("""
+            SELECT
+                date_key,
+                SUM(revenue)      AS ca,
+                COUNT(vente_key)  AS nb_transactions,
+                SUM(montant_ht)   AS ca_ht
+            FROM fact_vente
+            WHERE revenue > 0
+            GROUP BY date_key
+            ORDER BY date_key
+        """)
+        if df.empty:
+            return jsonify([])
+
+        df['date'] = pd.to_datetime(df['date_key'].astype(str), format='%Y%m%d', errors='coerce')
+        df = df.dropna(subset=['date'])
+        monthly = (
+            df.set_index('date')
+              .resample('ME')[['ca', 'nb_transactions', 'ca_ht']]
+              .sum()
+              .reset_index()
+        )
+        monthly['mois'] = monthly['date'].dt.strftime('%b %Y')
+        monthly = monthly.drop(columns=['date'])
+
+        return jsonify({
+            "source": "Sougui_DWH",
+            "data": monthly.where(pd.notnull(monthly), None).to_dict('records')
+        })
+    except Exception as e:
+        logger.error(f'[Evolution CA DWH] {e}')
+        return jsonify({"error": str(e)}), 500
+
+
+# ─── Top Produits (DWH) ──────────────────────────────────────────────────────
+@app.route('/api/dwh/top-produits', methods=['GET'])
+def get_dwh_top_produits():
+    """Top 20 produits par CA avec categorie et performance."""
+    try:
+        limit = request.args.get('limit', 20, type=int)
+        df = fetch_dwh(f"""
+            SELECT
+                dp.libelle       AS produit,
+                dp.categorie,
+                dp.prix_vente,
+                SUM(fv.quantite) AS qty_vendue,
+                SUM(fv.revenue)  AS ca,
+                COUNT(DISTINCT fv.client_key) AS nb_clients
+            FROM dim_produit dp
+            JOIN fact_vente fv ON dp.produit_key = fv.produit_key
+            WHERE fv.revenue > 0 AND dp.produit_key > 0
+            GROUP BY dp.libelle, dp.categorie, dp.prix_vente
+            ORDER BY ca DESC
+            LIMIT {limit}
+        """)
+        if df.empty:
+            return jsonify([])
+        return jsonify({
+            "source": "Sougui_DWH",
+            "produits": df.where(pd.notnull(df), None).to_dict('records')
+        })
+    except Exception as e:
+        logger.error(f'[Top Produits DWH] {e}')
+        return jsonify({"error": str(e)}), 500
+
+
+
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ─── NOUVEAUX ENDPOINTS ML PRÉDICTIFS ─────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════════
+
+import math as _math
+
+def _load_pkl(name):
+    """Charger un fichier .pkl depuis le dossier models."""
+    try:
+        path = os.path.join(MODELS_DIR, name)
+        with open(path, 'rb') as f:
+            return pickle.load(f)
+    except Exception as e:
+        logger.warning(f'[PKL] Cannot load {name}: {e}')
+        return None
+
+def _load_json_model(name):
+    """Charger un fichier JSON depuis le dossier models."""
+    try:
+        path = os.path.join(MODELS_DIR, name)
+        with open(path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        logger.warning(f'[JSON] Cannot load {name}: {e}')
+        return None
+
+
+# ─── 1. Best Seller B2C ───────────────────────────────────────────────────────
+@app.route('/api/predict/best-seller-b2c', methods=['POST'])
+def predict_best_seller_b2c():
+    """Prédit si un produit sera Best Seller en B2C (formulaire: categorie, matiere, prix, nb_commandes)."""
+    try:
+        data = request.get_json() or {}
+        model   = _load_pkl('best_seller_b2c_v1.pkl')
+        enc     = _load_pkl('best_seller_b2c_encoders_v1.pkl')
+        meta    = _load_json_model('best_seller_b2c_metadata.json')
+
+        if not model or not enc:
+            return jsonify({"error": "Modèle Best Seller non disponible"}), 503
+
+        # Encoder les inputs
+        categorie   = data.get('categorie', 'Non catalogué')
+        matiere     = data.get('matiere', 'Autre')
+        prix        = float(data.get('prix', 0))
+        nb_commandes= float(data.get('nb_commandes', 1))
+
+        # Encoder avec fallback sur valeur inconnue
+        cats = enc['categories']
+        mats = enc['matieres']
+        cat_enc = cats.index(categorie) if categorie in cats else 0
+        mat_enc = mats.index(matiere)   if matiere   in mats else 0
+        log_prix = __import__('numpy').log1p(prix)
+
+        X = [[cat_enc, mat_enc, log_prix, nb_commandes]]
+        proba = model.predict_proba(X)[0]
+        pred  = int(model.predict(X)[0])
+        score = round(float(proba[1]) * 100, 1)
+
+        niveau = 'Très Probable' if score >= 70 else ('Probable' if score >= 50 else 'Peu Probable')
+        couleur= '#22c55e' if score >= 70 else ('#f59e0b' if score >= 50 else '#ef4444')
+
+        return jsonify({
+            "prediction":   pred,
+            "is_best_seller": bool(pred),
+            "score_pct":    score,
+            "niveau":       niveau,
+            "couleur":      couleur,
+            "accuracy_modele": meta.get('accuracy', 0) if meta else 0,
+            "interpretation": f"Ce produit a {score}% de chances d'être un Best Seller B2C.",
+            "recommandation": "Mettre en avant sur le site web et les réseaux sociaux." if pred else "Optimiser le prix ou la catégorie pour améliorer les ventes."
+        })
+    except Exception as e:
+        logger.error(f'[Best Seller B2C] {e}')
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/predict/best-seller-b2c/metadata', methods=['GET'])
+def get_best_seller_metadata():
+    """Retourne les métadonnées du modèle Best Seller (catégories, matières disponibles)."""
+    meta = _load_json_model('best_seller_b2c_metadata.json')
+    if not meta:
+        return jsonify({"error": "Métadonnées non disponibles"}), 503
+    return jsonify(meta)
+
+
+# ─── 2. B2B Demand Prediction ─────────────────────────────────────────────────
+@app.route('/api/predict/b2b-demand', methods=['POST'])
+def predict_b2b_demand():
+    """Prédit la demande B2B (revenue) pour une configuration client donnée."""
+    try:
+        data    = request.get_json() or {}
+        model   = _load_pkl('b2b_demand_xgb_v1.pkl')
+        enc     = _load_pkl('b2b_demand_encoders_v1.pkl')
+        meta    = _load_json_model('b2b_demand_metadata.json')
+
+        if not model or not enc:
+            return jsonify({"error": "Modèle B2B Demand non disponible"}), 503
+
+        gouvernorat = str(data.get('gouvernorat', 'Tunis')).strip().title()
+        secteur     = str(data.get('secteur', 'Banque'))
+        paiement    = str(data.get('paiement', 'Virement'))
+        saison      = str(data.get('saison', 'Ete'))
+        mois        = int(data.get('mois', 6))
+        trimestre   = int(data.get('trimestre', 2))
+        quantite    = float(data.get('quantite', 10))
+        is_ramadan  = int(data.get('is_ramadan', 0))
+        nb_cmd_hist = float(data.get('nb_cmd_historique', 5))
+        ca_cumul    = float(data.get('ca_cumul', 5000))
+
+        import numpy as np
+        def safe_enc(le, val, classes):
+            if val in classes: return classes.index(val)
+            return 0
+
+        govs  = enc['gouvernorats']
+        secs  = enc['secteurs']
+        pays  = enc['paiements']
+        sais  = enc['saisons']
+
+        gov_enc   = safe_enc(None, gouvernorat, govs)
+        sec_enc   = safe_enc(None, secteur, secs)
+        pay_enc   = safe_enc(None, paiement, pays)
+        sais_enc  = safe_enc(None, saison, sais)
+        canal_enc = 0
+        qty_log   = np.log1p(quantite)
+
+        X = [[gov_enc, sec_enc, pay_enc, canal_enc, sais_enc,
+              mois, trimestre, is_ramadan,
+              quantite, qty_log, ca_cumul, nb_cmd_hist]]
+
+        pred_revenue = float(model.predict(X)[0])
+        pred_revenue = max(0, pred_revenue)
+
+        # Prédiction sur 3 mois avec variation saisonnière
+        predictions_3mois = []
+        for i in range(3):
+            m_i = ((mois - 1 + i) % 12) + 1
+            t_i = (m_i - 1) // 3 + 1
+            X_i = [[gov_enc, sec_enc, pay_enc, canal_enc, sais_enc,
+                    m_i, t_i, is_ramadan,
+                    quantite, qty_log, ca_cumul + pred_revenue * i, nb_cmd_hist + i]]
+            p_i = max(0, float(model.predict(X_i)[0]))
+            predictions_3mois.append({
+                "mois": m_i,
+                "label": ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'][m_i-1],
+                "revenue_predit": round(p_i, 2)
+            })
+
+        return jsonify({
+            "revenue_predit":      round(pred_revenue, 2),
+            "predictions_3mois":   predictions_3mois,
+            "ca_3mois_total":      round(sum(p['revenue_predit'] for p in predictions_3mois), 2),
+            "mae_modele":          meta.get('mae', 0) if meta else 0,
+            "interpretation":      f"Demande B2B estimée à {pred_revenue:.0f} DT pour {gouvernorat} — secteur {secteur}.",
+            "recommandation":      "Préparer les stocks et l'équipe commerciale en conséquence."
+        })
+    except Exception as e:
+        logger.error(f'[B2B Demand] {e}')
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/predict/b2b-demand/metadata', methods=['GET'])
+def get_b2b_demand_metadata():
+    meta = _load_json_model('b2b_demand_metadata.json')
+    if not meta: return jsonify({"error": "Métadonnées non disponibles"}), 503
+    return jsonify(meta)
+
+
+# ─── 3. Churn Prediction ──────────────────────────────────────────────────────
+@app.route('/api/predict/churn', methods=['POST'])
+def predict_churn():
+    """Prédit le risque de churn (départ) d'un client basé sur ses métriques RFM."""
+    try:
+        data  = request.get_json() or {}
+        model = _load_pkl('churn_prediction_v1.pkl')
+        enc   = _load_pkl('churn_encoders_v1.pkl')
+        meta  = _load_json_model('churn_metadata.json')
+
+        if not model or not enc:
+            return jsonify({"error": "Modèle Churn non disponible"}), 503
+
+        import numpy as np
+
+        recency       = float(data.get('recency', 90))
+        frequency     = float(data.get('frequency', 3))
+        monetary      = float(data.get('monetary', 1000))
+        gouvernorat   = str(data.get('gouvernorat', 'Tunis')).strip().title()
+        secteur       = str(data.get('secteur', 'Particulier'))
+        type_client   = str(data.get('type_client', 'B2C'))
+        tenure_days   = float(data.get('tenure_days', 180))
+
+        # Encoder
+        govs = enc['gouvernorats']
+        secs = enc['secteurs']
+        typs = enc['types']
+
+        gov_enc = govs.index(gouvernorat) if gouvernorat in govs else 0
+        sec_enc = secs.index(secteur)     if secteur in secs     else 0
+        typ_enc = typs.index(type_client) if type_client in typs else 0
+
+        avg_order = monetary / max(frequency, 1)
+        purchase_rate = frequency / max(tenure_days, 1) * 30
+        r_score = min(5, max(1, round((1 - recency / 400) * 5)))
+        f_score = min(5, max(1, round(frequency / 2)))
+        m_score = min(5, max(1, round(monetary / 5000 * 5)))
+
+        X_raw = [[recency, frequency, monetary,
+                  r_score, f_score, m_score,
+                  tenure_days, avg_order, purchase_rate,
+                  gov_enc, sec_enc, typ_enc]]
+
+        scaler = enc.get('scaler')
+        X = scaler.transform(X_raw) if scaler else X_raw
+
+        proba = model.predict_proba(X)[0]
+        churn_pct = round(float(proba[1]) * 100, 1)
+
+        if churn_pct >= 70:
+            segment = "Client Perdu";    couleur = '#ef4444'; action = "Contact urgent — offrir une remise de fidélisation."
+        elif churn_pct >= 40:
+            segment = "À Risque";        couleur = '#f59e0b'; action = "Envoyer une campagne email personnalisée dans les 7 jours."
+        else:
+            segment = "Client Fidèle";   couleur = '#22c55e'; action = "Maintenir la relation — proposer une offre premium."
+
+        return jsonify({
+            "churn_probabilite": churn_pct,
+            "segment":           segment,
+            "couleur":           couleur,
+            "action_recommandee":action,
+            "rfm": {"recency": recency, "frequency": frequency, "monetary": monetary,
+                    "r_score": r_score, "f_score": f_score, "m_score": m_score},
+            "auc_modele":        meta.get('auc', 0) if meta else 0,
+            "interpretation":    f"Probabilité de départ : {churn_pct}% — Segment : {segment}"
+        })
+    except Exception as e:
+        logger.error(f'[Churn] {e}')
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/predict/churn/metadata', methods=['GET'])
+def get_churn_metadata():
+    meta = _load_json_model('churn_metadata.json')
+    if not meta: return jsonify({"error": "Métadonnées non disponibles"}), 503
+    return jsonify(meta)
+
+
+# ─── 4. Supplier Scoring ──────────────────────────────────────────────────────
+@app.route('/api/predict/supplier-scoring', methods=['GET'])
+def get_supplier_scoring():
+    """Retourne le classement complet des fournisseurs avec scores de performance."""
+    try:
+        suppliers = _load_json_model('suppliers_scored.json')
+        if not suppliers:
+            return jsonify({"error": "Données fournisseurs non disponibles"}), 503
+
+        # Filtres optionnels
+        classe_filter = request.args.get('classe', None)
+        if classe_filter:
+            suppliers = [s for s in suppliers if str(s.get('classe','')) == classe_filter]
+
+        # Tri par score global
+        suppliers = sorted(suppliers, key=lambda s: float(s.get('score_global', 0)), reverse=True)
+
+        distribution = {}
+        all_s = _load_json_model('suppliers_scored.json') or []
+        for s in all_s:
+            c = str(s.get('classe', 'Standard'))
+            distribution[c] = distribution.get(c, 0) + 1
+
+        return jsonify({
+            "source":       "Sougui_DWH",
+            "total":        len(all_s),
+            "distribution": distribution,
+            "fournisseurs": suppliers[:50]
+        })
+    except Exception as e:
+        logger.error(f'[Supplier Scoring] {e}')
+        return jsonify({"error": str(e)}), 500
+
+
+# ─── 5. Delivery Analysis ─────────────────────────────────────────────────────
+@app.route('/api/predict/delivery-analysis', methods=['GET'])
+def get_delivery_clients():
+    """Retourne la liste des clients avec distance et coût estimé depuis l'entrepôt Sougui."""
+    try:
+        clients = _load_json_model('delivery_clients.json')
+        if not clients:
+            return jsonify({"error": "Données livraison non disponibles"}), 503
+
+        meta = _load_json_model('delivery_metadata.json') or {}
+        search = request.args.get('q', '').lower()
+        if search:
+            clients = [c for c in clients if search in str(c.get('Nom_client','')).lower()
+                       or search in str(c.get('Gouvernorat','')).lower()]
+
+        return jsonify({
+            "entrepot":  meta.get('sougui_warehouse', {"lat": 36.8065, "lng": 10.1815}),
+            "total":     len(clients),
+            "clients":   clients[:200]
+        })
+    except Exception as e:
+        logger.error(f'[Delivery] {e}')
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/predict/delivery-analysis/calculate', methods=['POST'])
+def calculate_delivery():
+    """Calcule la distance et le coût de livraison pour un client donné."""
+    try:
+        data = request.get_json() or {}
+        SOUGUI_LAT, SOUGUI_LNG = 36.8065, 10.1815
+
+        client_lat = float(data.get('lat', SOUGUI_LAT))
+        client_lng = float(data.get('lng', SOUGUI_LNG))
+        client_nom = str(data.get('nom', 'Client'))
+        gouvernorat= str(data.get('gouvernorat', 'Tunis'))
+
+        # Haversine
+        R = 6371
+        dlat = _math.radians(client_lat - SOUGUI_LAT)
+        dlng = _math.radians(client_lng - SOUGUI_LNG)
+        a = (_math.sin(dlat/2)**2 +
+             _math.cos(_math.radians(SOUGUI_LAT)) *
+             _math.cos(_math.radians(client_lat)) *
+             _math.sin(dlng/2)**2)
+        distance_km = round(R * 2 * _math.asin(_math.sqrt(a)), 2)
+
+        # Estimation coût
+        if distance_km <= 5:
+            cout = round(1.5 + distance_km * 0.2, 2);   zone = "Proximité"
+        elif distance_km <= 20:
+            cout = round(3.0 + distance_km * 0.15, 2);  zone = "Grand Tunis"
+        elif distance_km <= 100:
+            cout = round(8.0 + distance_km * 0.12, 2);  zone = "Régionale"
+        else:
+            cout = round(15.0 + distance_km * 0.10, 2); zone = "Nationale"
+
+        return jsonify({
+            "client":       client_nom,
+            "gouvernorat":  gouvernorat,
+            "distance_km":  distance_km,
+            "cout_estime":  cout,
+            "zone":         zone,
+            "entrepot":     {"lat": SOUGUI_LAT, "lng": SOUGUI_LNG, "nom": "Entrepôt Sougui — Tunis"},
+            "client_coords":{"lat": client_lat,  "lng": client_lng},
+            "description":  f"Distance de {distance_km} km · Coût estimé : {cout} DT · Zone {zone}"
+        })
+    except Exception as e:
+        logger.error(f'[Delivery Calc] {e}')
+        return jsonify({"error": str(e)}), 500
+
+
+# ─── 6. Price Simulator ───────────────────────────────────────────────────────
+@app.route('/api/predict/price-simulator', methods=['POST'])
+def simulate_price():
+    """Simule l'impact d'un changement de prix sur les ventes et le CA."""
+    try:
+        data      = request.get_json() or {}
+        artifacts = _load_pkl('price_simulator_v1.pkl')
+        meta      = _load_json_model('price_metadata.json')
+
+        if not artifacts:
+            return jsonify({"error": "Modèle Price Simulator non disponible"}), 503
+
+        import numpy as np
+
+        categorie     = str(data.get('categorie', 'Arts de la table'))
+        matiere       = str(data.get('matiere', 'Cuivre'))
+        prix_actuel   = float(data.get('prix_actuel', 50))
+        prix_nouveau  = float(data.get('prix_nouveau', 55))
+        mois          = int(data.get('mois', 6))
+        trimestre     = ((mois - 1) // 3) + 1
+        saison        = data.get('saison', 'Ete')
+        qty_actuelle  = float(data.get('qty_actuelle', 10))
+
+        le_cat = artifacts['le_cat']
+        le_mat = artifacts['le_mat']
+        le_sai = artifacts['le_sai']
+        scaler = artifacts['scaler']
+        model  = artifacts['model_ridge']
+        elasticites = artifacts.get('elasticites', {})
+
+        cats = list(le_cat.classes_)
+        mats = list(le_mat.classes_)
+        sais = list(le_sai.classes_)
+
+        cat_enc = cats.index(categorie) if categorie in cats else 0
+        mat_enc = mats.index(matiere)   if matiere   in mats else 0
+        sai_enc = sais.index(saison)    if saison    in sais else 0
+
+        # Prédiction avec prix actuel
+        X_act = [[np.log1p(prix_actuel),  cat_enc, mat_enc, sai_enc, mois, trimestre]]
+        X_new = [[np.log1p(prix_nouveau), cat_enc, mat_enc, sai_enc, mois, trimestre]]
+
+        X_act_s = scaler.transform(X_act)
+        X_new_s = scaler.transform(X_new)
+
+        qty_pred_act = max(0.1, float(np.expm1(model.predict(X_act_s)[0])))
+        qty_pred_new = max(0.1, float(np.expm1(model.predict(X_new_s)[0])))
+
+        # Utiliser l'élasticité par catégorie si disponible
+        elasticite = elasticites.get(categorie, -1.2)
+        delta_prix_pct = (prix_nouveau - prix_actuel) / prix_actuel * 100 if prix_actuel > 0 else 0
+        delta_qty_pct  = elasticite * delta_prix_pct
+
+        # Ajustement combiné modèle + élasticité
+        qty_nouvelle = max(0, qty_actuelle * (1 + delta_qty_pct / 100))
+
+        ca_actuel  = round(prix_actuel  * qty_actuelle,  2)
+        ca_nouveau = round(prix_nouveau * qty_nouvelle, 2)
+        delta_ca   = round(ca_nouveau - ca_actuel, 2)
+        delta_ca_pct = round((ca_nouveau - ca_actuel) / max(ca_actuel, 1) * 100, 1)
+
+        if delta_ca > 0:
+            recommandation = f"Hausse de prix recommandee : +{delta_ca:.0f} DT de CA supplementaire."
+            couleur = '#22c55e'
+        else:
+            recommandation = f"Attention : cette hausse pourrait reduire le CA de {abs(delta_ca):.0f} DT."
+            couleur = '#ef4444'
+
+        return jsonify({
+            "prix_actuel":      prix_actuel,
+            "prix_nouveau":     prix_nouveau,
+            "delta_prix_pct":   round(delta_prix_pct, 1),
+            "qty_actuelle":     qty_actuelle,
+            "qty_nouvelle":     round(qty_nouvelle, 1),
+            "delta_qty_pct":    round(delta_qty_pct, 1),
+            "ca_actuel":        ca_actuel,
+            "ca_nouveau":       ca_nouveau,
+            "delta_ca":         delta_ca,
+            "delta_ca_pct":     delta_ca_pct,
+            "elasticite":       round(elasticite, 2),
+            "couleur":          couleur,
+            "recommandation":   recommandation,
+            "r2_modele":        meta.get('r2', 0) if meta else 0
+        })
+    except Exception as e:
+        logger.error(f'[Price Simulator] {e}')
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/predict/price-simulator/products', methods=['GET'])
+def get_price_products():
+    """Retourne la liste des produits avec leur prix pour le simulateur."""
+    products = _load_json_model('price_products.json')
+    if not products: return jsonify({"error": "Données prix non disponibles"}), 503
+    meta = _load_json_model('price_metadata.json') or {}
+    return jsonify({"produits": products, "categories": meta.get('categories', []),
+                    "matieres": meta.get('matieres', []), "saisons": meta.get('saisons', [])})
+
 
 # ─── Prédictions ML ──────────────────────────────────────────────────────────
 @app.route('/api/predict/ca', methods=['GET'])

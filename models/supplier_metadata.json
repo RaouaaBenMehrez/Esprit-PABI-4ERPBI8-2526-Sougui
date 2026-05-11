@@ -1,0 +1,1 @@
+{"n_fournisseurs": 68, "best_k": 2, "silhouette": 0.7577, "specialites": ["Autre", "Céramique & Artisanat"], "features": ["score_volume", "score_frequence", "score_recence", "score_diversite"], "distribution": {"À Revoir": 59, "Standard": 8, "Stratégique": 1}}

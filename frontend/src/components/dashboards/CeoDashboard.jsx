@@ -7,15 +7,32 @@ import {
 import { TrendingUp, Users, ShoppingBag, Percent, BrainCircuit, Loader2, ChevronUp, ChevronDown, Search, BarChart2, Package, Database, RefreshCw, FileCode } from 'lucide-react';
 import AppLayout from '../layout/AppLayout';
 import ProfileSettings from '../profile/ProfileSettings';
+import B2BDemandPrediction from '../predictions/B2BDemandPrediction';
+import PriceSimulator     from '../predictions/PriceSimulator';
+import SupplierScoring    from '../predictions/SupplierScoring';
+import PowerBIEmbed      from '../powerbi/PowerBIEmbed';
+import PredictionsPage   from '../predictions/PredictionsPage';
 
 const API = 'http://127.0.0.1:5000/api';
-const PBI_BASE = 'https://app.powerbi.com/reportEmbed?reportId=fa5fa437-6265-43ec-a047-a6802e6f49c4&autoAuth=true&ctid=604f1a96-cbe8-43f8-abbf-f8eaf5d85730';
+const PBI_CEO_ID = '8e3da978-93c5-4e23-bec1-b0ebfb0cdb4c';
+const PBI_BASE = `https://app.powerbi.com/reportEmbed?reportId=${PBI_CEO_ID}&autoAuth=true&ctid=604f1a96-cbe8-43f8-abbf-f8eaf5d85730`;
 
 const NAV = [
   { title: 'Vue Globale', items: [
     { id: 'overview',    label: 'Vue d\'ensemble', icon: '🏠' },
     { id: 'revenue',     label: 'CA & Revenus',    icon: '💰' },
     { id: 'clients-ceo', label: 'Clients B2B',     icon: '🤝' },
+  ]},
+  { title: 'Tableau de Bord', items: [
+    { id: 'powerbi',     label: 'Power BI Report',  icon: '📊', badge: 'PBI' },
+    { id: 'bcg',         label: 'BCG Matrix',       icon: '🎯', badge: 'DWH' },
+    { id: 'logistique',  label: 'Logistique',       icon: '🚚', badge: 'DWH' },
+  ]},
+  { title: 'Prédictions ML', items: [
+    { id: 'predictions-hub',  label: 'Hub Prédictions',  icon: '🧠', badge: '6 ML' },
+    { id: 'b2b-demand',       label: 'B2B Demand',       icon: '📈', badge: 'ML' },
+    { id: 'price-simulator',  label: 'Price Simulator',  icon: '💲', badge: 'ML' },
+    { id: 'supplier-scoring', label: 'Supplier Scoring', icon: '🏭', badge: 'ML' },
   ]},
   { title: 'Intelligence IA', items: [
     { id: 'forecast',    label: 'Prévision Prophet', icon: '🔮', badge: 'IA' },
@@ -303,14 +320,20 @@ const CeoDashboard = ({ user, onLogout, onUpdateUser }) => {
   const [salesSearch, setSalesSearch] = useState('');
   const [clients, setClients] = useState([]);
   const [clientSearch, setClientSearch] = useState('');
+  const [dwhStats, setDwhStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       fetch(`${API}/dashboard`).then(r => r.json()),
       fetch(`${API}/clients`).then(r => r.json()),
-    ]).then(([d, c]) => { setDash(d); setClients(c); setLoading(false); })
-      .catch(() => setLoading(false));
+      fetch(`${API}/dwh/stats`).then(r => r.json()).catch(() => null),
+    ]).then(([d, c, s]) => {
+      setDash(d);
+      setClients(c);
+      if (s && s.stats) setDwhStats(s.stats);
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -369,8 +392,14 @@ const CeoDashboard = ({ user, onLogout, onUpdateUser }) => {
             }}>
               <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: 240, height: 240, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }} />
               <div style={{ position: 'relative', zIndex: 1 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.6)', marginBottom: 8 }}>
-                  Startup Artisanat Tunisien
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.6)' }}>
+                    Startup Artisanat Tunisien
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '2px 10px', borderRadius: 999, background: 'rgba(34,197,94,0.2)', border: '1px solid rgba(34,197,94,0.4)' }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 6px #22c55e', animation: 'pulse 2s infinite' }} />
+                    <span style={{ fontSize: 10, fontWeight: 700, color: '#22c55e', letterSpacing: '0.1em' }}>DWH LIVE</span>
+                  </div>
                 </div>
                 <h2 style={{ fontFamily: '"Playfair Display", serif', fontSize: 32, fontWeight: 900, color: '#fff', marginBottom: 8 }}>
                   Sougui.tn — CA Total
@@ -380,8 +409,25 @@ const CeoDashboard = ({ user, onLogout, onUpdateUser }) => {
                   <span style={{ fontSize: 24, fontWeight: 600, marginLeft: 8, opacity: 0.8 }}>DT</span>
                 </div>
                 <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, marginTop: 8 }}>
-                  Ratio B2B : {(dash?.ratio * 100)?.toFixed(1)}% · {dash?.kpis?.[1]?.value} transactions analysées
+                  Ratio B2B : {(dash?.ratio * 100)?.toFixed(1)}% · {dash?.kpis?.[1]?.value} transactions · Source : Sougui_DWH
                 </p>
+                {/* DWH Stats Row */}
+                {dwhStats && (
+                  <div style={{ display: 'flex', gap: 24, marginTop: 20, flexWrap: 'wrap' }}>
+                    {[
+                      { label: 'Transactions DWH', val: dwhStats.transactions?.toLocaleString() },
+                      { label: 'CA Réel', val: `${(dwhStats.ca_total/1000).toFixed(1)} K DT` },
+                      { label: 'Clients', val: dwhStats.clients },
+                      { label: 'Fournisseurs', val: dwhStats.fournisseurs },
+                      { label: 'Achats', val: dwhStats.achats },
+                    ].map((item, i) => (
+                      <div key={i} style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: 22, fontWeight: 800, color: '#fff' }}>{item.val}</div>
+                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{item.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -459,23 +505,48 @@ const CeoDashboard = ({ user, onLogout, onUpdateUser }) => {
             {/* Prophet inline */}
             <ProphetForecast />
 
-            {/* Power BI embedded in overview */}
-            <div style={{ marginTop: 32 }}>
-              <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 14px', borderRadius: 9999, background: 'var(--orange-glow)', border: '1px solid var(--orange-border)' }}>
-                  <BarChart2 size={13} style={{ color: 'var(--orange)' }} />
-                  <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--orange)' }}>Power BI Dashboard</span>
-                </div>
-                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Vue globale — tous les rapports Sougui.tn</span>
+            {/* Top B2B Clients from DWH */}
+            {dwhStats?.top_clients_b2b?.length > 0 && (
+              <div style={{ marginTop: 24, marginBottom: 24 }}>
+                <ChartCard
+                  title="🏆 Top 5 Clients B2B — Données Réelles DWH"
+                  subtitle={`Source : fact_vente × dim_client · Sougui_DWH`}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
+                    {dwhStats.top_clients_b2b.map((c, i) => {
+                      const maxCa = dwhStats.top_clients_b2b[0]?.ca || 1;
+                      const pct = (c.ca / maxCa * 100).toFixed(0);
+                      return (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{
+                            width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                            background: ['#1e5aff','#4d7fff','#7c3aed','#059669','#f59e0b'][i],
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 12, fontWeight: 800, color: '#fff'
+                          }}>{i + 1}</div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{c.name}</span>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)' }}>
+                                {c.ca?.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} DT
+                              </span>
+                            </div>
+                            <div style={{ height: 6, borderRadius: 3, background: 'var(--bg-hover)', overflow: 'hidden' }}>
+                              <div style={{
+                                height: '100%', borderRadius: 3, width: `${pct}%`,
+                                background: `linear-gradient(90deg, ${['#1e5aff','#4d7fff','#7c3aed','#059669','#f59e0b'][i]}, transparent)`
+                              }} />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ChartCard>
               </div>
-              <div className="powerbi-container">
-                <iframe
-                  title="Dashbord_Souguitn_CEO"
-                  src={PBI_BASE}
-                  allowFullScreen
-                />
-              </div>
-            </div>
+            )}
+
+            {/* Power BI section removed from overview — now has its own dedicated page */}
           </div>
         )}
 
@@ -614,6 +685,44 @@ const CeoDashboard = ({ user, onLogout, onUpdateUser }) => {
           </div>
         )}
 
+        {/* ── Power BI dédié CEO ── */}
+        {page === 'powerbi' && (
+          <div style={{ padding: '40px' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:24 }}>
+              <div style={{ width:48, height:48, borderRadius:14, background:'rgba(242,200,17,0.12)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <rect x="2" y="14" width="4" height="8" rx="1" fill="#f2c811"/>
+                  <rect x="8" y="9"  width="4" height="13" rx="1" fill="#f2c811" opacity=".8"/>
+                  <rect x="14" y="4" width="4" height="18" rx="1" fill="#f2c811" opacity=".6"/>
+                  <rect x="20" y="2" width="2" height="20" rx="1" fill="#f2c811" opacity=".4"/>
+                </svg>
+              </div>
+              <div>
+                <h1 style={{ fontSize:28, fontWeight:900, color:'var(--text-primary)' }}>Power BI Report</h1>
+                <p style={{ fontSize:13, color:'var(--text-muted)' }}>Rapport interactif CEO · Sans onglets ni panneau filtres · Sougui.tn Analytics</p>
+              </div>
+              <div style={{ marginLeft:'auto', padding:'4px 12px', borderRadius:999, background:'rgba(242,200,17,0.1)', border:'1px solid rgba(242,200,17,0.3)', fontSize:11, fontWeight:700, color:'#f2c811' }}>
+                ● LIVE
+              </div>
+            </div>
+            <PowerBIEmbed reportId={PBI_CEO_ID} title="Rapport CEO" />
+          </div>
+        )}
+
+        {/* ── BCG Matrix page (DWH réel) ── */}
+        {page === 'bcg' && <BcgPage API={API} />}
+
+        {/* ── Logistique page (DWH réel) ── */}
+        {page === 'logistique' && <LogistiquePage API={API} />}
+
+        {/* ── Hub toutes les prédictions (6 modèles) ── */}
+        {page === 'predictions-hub' && <PredictionsPage />}
+
+        {/* ── Prédictions ML individuelles ── */}
+        {page === 'b2b-demand'       && <div style={{ padding:'40px' }}><B2BDemandPrediction /></div>}
+        {page === 'price-simulator'  && <div style={{ padding:'40px' }}><PriceSimulator /></div>}
+        {page === 'supplier-scoring' && <div style={{ padding:'40px' }}><SupplierScoring /></div>}
+
         {/* ── Profile Settings ── */}
         {page === 'settings' && (
           <div style={{ padding: '40px' }}>
@@ -626,4 +735,257 @@ const CeoDashboard = ({ user, onLogout, onUpdateUser }) => {
   );
 };
 
+/* ══ BCG Matrix Page ════════════════════════════════════════════════════════ */
+const BCG_COLORS = {
+  'Stars':          { bg: 'rgba(234,179,8,0.12)',  border: 'rgba(234,179,8,0.4)',  text: '#eab308', icon: '⭐' },
+  'Cash Cows':      { bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.4)', text: '#22c55e', icon: '🐄' },
+  'Question Marks': { bg: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.4)',text: '#3b82f6', icon: '❓' },
+  'Dogs':           { bg: 'rgba(239,68,68,0.12)',  border: 'rgba(239,68,68,0.4)', text: '#ef4444', icon: '🐕' },
+};
+
+const BcgPage = ({ API }) => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all');
+
+  useEffect(() => {
+    fetch(`${API}/dwh/bcg`)
+      .then(r => r.json())
+      .then(d => { setData(d); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  if (loading) return (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:400 }}>
+      <Loader2 size={32} style={{ animation:'spin 1s linear infinite', color:'var(--blue)' }} />
+    </div>
+  );
+  if (!data || !data.produits) return <div style={{ color:'var(--text-muted)', padding:40 }}>Aucune donnée BCG disponible.</div>;
+
+  const produits = filter === 'all' ? data.produits : data.produits.filter(p => p.quadrant === filter);
+
+  return (
+    <div className="anim-fade-up">
+      {/* Header */}
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:6 }}>
+          <h1 style={{ fontFamily:'"Playfair Display", serif', fontSize:36, fontWeight:900, color:'var(--text-primary)' }}>
+            Matrice <span style={{ color:'var(--blue)' }}>BCG</span>
+          </h1>
+          <div style={{ display:'flex', alignItems:'center', gap:5, padding:'3px 10px', borderRadius:999, background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.3)' }}>
+            <div style={{ width:6, height:6, borderRadius:'50%', background:'#22c55e' }} />
+            <span style={{ fontSize:10, fontWeight:700, color:'#22c55e' }}>DWH LIVE</span>
+          </div>
+        </div>
+        <p style={{ fontSize:13, color:'var(--text-muted)' }}>
+          {data.total_produits} produits analysés · CA Total : {(data.ca_total/1000).toFixed(1)} K DT · Source : Sougui_DWH
+        </p>
+      </div>
+
+      {/* Quadrant Summary Cards */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16, marginBottom:28 }}>
+        {Object.entries(BCG_COLORS).map(([q, s]) => {
+          const count = data.produits.filter(p => p.quadrant === q).length;
+          const ca    = data.produits.filter(p => p.quadrant === q).reduce((a,p) => a + p.ca_total, 0);
+          return (
+            <div key={q} onClick={() => setFilter(filter === q ? 'all' : q)}
+              style={{ padding:20, borderRadius:14, background:s.bg, border:`1px solid ${s.border}`,
+                cursor:'pointer', transition:'all .2s', transform: filter===q ? 'scale(1.03)':'scale(1)',
+                boxShadow: filter===q ? `0 0 20px ${s.border}` : 'none'
+              }}>
+              <div style={{ fontSize:28, marginBottom:8 }}>{s.icon}</div>
+              <div style={{ fontSize:18, fontWeight:800, color:s.text }}>{q}</div>
+              <div style={{ fontSize:22, fontWeight:700, color:'var(--text-primary)', marginTop:4 }}>{count}</div>
+              <div style={{ fontSize:11, color:'var(--text-muted)' }}>produits · {(ca/1000).toFixed(1)} K DT</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Products Table */}
+      <div className="s-card" style={{ padding:0, overflow:'hidden' }}>
+        <div style={{ padding:'16px 24px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+          <h3 style={{ fontWeight:700, fontSize:14, color:'var(--text-primary)' }}>
+            Produits — {filter === 'all' ? 'Tous les quadrants' : filter}
+          </h3>
+          {filter !== 'all' && (
+            <button onClick={() => setFilter('all')} style={{ fontSize:11, color:'var(--blue)', background:'none', border:'none', cursor:'pointer' }}>
+              Voir tous ✕
+            </button>
+          )}
+        </div>
+        <table style={{ width:'100%', borderCollapse:'collapse' }}>
+          <thead>
+            <tr style={{ background:'var(--bg-hover)' }}>
+              {['Produit','Catégorie','Prix','Qté Vendue','CA Total','Part Marché','Quadrant'].map(h => (
+                <th key={h} style={{ padding:'10px 16px', textAlign:'left', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', color:'var(--text-muted)', whiteSpace:'nowrap' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {produits.slice(0,20).map((p, i) => {
+              const s = BCG_COLORS[p.quadrant] || BCG_COLORS['Dogs'];
+              return (
+                <tr key={i} style={{ borderTop:'1px solid var(--border)', transition:'background .15s' }}
+                  onMouseEnter={e => e.currentTarget.style.background='var(--bg-hover)'}
+                  onMouseLeave={e => e.currentTarget.style.background='transparent'}>
+                  <td style={{ padding:'10px 16px', fontSize:13, color:'var(--text-primary)', fontWeight:600, maxWidth:200 }}>
+                    {String(p.produit).slice(0,35)}{p.produit?.length > 35 ? '…' : ''}
+                  </td>
+                  <td style={{ padding:'10px 16px', fontSize:12, color:'var(--text-muted)' }}>{p.categorie || '—'}</td>
+                  <td style={{ padding:'10px 16px', fontSize:12, color:'var(--text-secondary)' }}>{Number(p.prix_vente).toFixed(0)} DT</td>
+                  <td style={{ padding:'10px 16px', fontSize:12, color:'var(--text-secondary)' }}>{Number(p.qty_totale).toFixed(0)}</td>
+                  <td style={{ padding:'10px 16px', fontSize:13, fontWeight:700, color:'var(--blue)' }}>
+                    {Number(p.ca_total).toLocaleString('fr-FR', { maximumFractionDigits:0 })} DT
+                  </td>
+                  <td style={{ padding:'10px 16px' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                      <div style={{ flex:1, height:4, borderRadius:2, background:'var(--bg-hover)', overflow:'hidden' }}>
+                        <div style={{ height:'100%', borderRadius:2, width:`${Math.min(p.part_marche * 5, 100)}%`, background:s.text }} />
+                      </div>
+                      <span style={{ fontSize:11, color:'var(--text-muted)', minWidth:36 }}>{p.part_marche}%</span>
+                    </div>
+                  </td>
+                  <td style={{ padding:'10px 16px' }}>
+                    <span style={{ padding:'3px 10px', borderRadius:999, background:s.bg, border:`1px solid ${s.border}`, fontSize:11, fontWeight:700, color:s.text }}>
+                      {s.icon} {p.quadrant}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+/* ══ Logistique Page ════════════════════════════════════════════════════════ */
+const RISK_STYLE = {
+  'Bas':   { color:'#22c55e', bg:'rgba(34,197,94,0.1)',   border:'rgba(34,197,94,0.3)' },
+  'Moyen': { color:'#f59e0b', bg:'rgba(245,158,11,0.1)',  border:'rgba(245,158,11,0.3)' },
+  'Haut':  { color:'#ef4444', bg:'rgba(239,68,68,0.1)',   border:'rgba(239,68,68,0.3)' },
+};
+
+const LogistiquePage = ({ API }) => {
+  const [data, setData]     = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${API}/dwh/logistique`)
+      .then(r => r.json())
+      .then(d => { setData(d); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  if (loading) return (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:400 }}>
+      <Loader2 size={32} style={{ animation:'spin 1s linear infinite', color:'var(--blue)' }} />
+    </div>
+  );
+  if (!data || !data.zones) return <div style={{ color:'var(--text-muted)', padding:40 }}>Aucune donnée logistique disponible.</div>;
+
+  const zones = data.zones || [];
+  const kpis  = data.kpis  || {};
+
+  return (
+    <div className="anim-fade-up">
+      {/* Header */}
+      <div style={{ marginBottom:32 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:6 }}>
+          <h1 style={{ fontFamily:'"Playfair Display", serif', fontSize:36, fontWeight:900, color:'var(--text-primary)' }}>
+            Dashboard <span style={{ color:'var(--blue)' }}>Logistique</span>
+          </h1>
+          <div style={{ display:'flex', alignItems:'center', gap:5, padding:'3px 10px', borderRadius:999, background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.3)' }}>
+            <div style={{ width:6, height:6, borderRadius:'50%', background:'#22c55e' }} />
+            <span style={{ fontSize:10, fontWeight:700, color:'#22c55e' }}>DWH LIVE</span>
+          </div>
+        </div>
+        <p style={{ fontSize:13, color:'var(--text-muted)' }}>
+          Analyse des livraisons par gouvernorat · Score de risque · Source : Sougui_DWH
+        </p>
+      </div>
+
+      {/* KPI Cards */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16, marginBottom:28 }}>
+        {[
+          { label:'Commandes Total', value: kpis.nb_commandes_total?.toLocaleString(), color:'var(--blue)', icon:'📦' },
+          { label:'CA Zones', value:`${((kpis.ca_total||0)/1000).toFixed(1)} K DT`, color:'#22c55e', icon:'💰' },
+          { label:'Zones Risque Bas', value: kpis.zones_risque_bas, color:'#22c55e', icon:'✅' },
+          { label:'Zones Risque Haut', value: kpis.zones_risque_haut, color:'#ef4444', icon:'⚠️' },
+        ].map((k,i) => (
+          <div key={i} className="kpi-card">
+            <div style={{ fontSize:28, marginBottom:12 }}>{k.icon}</div>
+            <div style={{ fontSize:28, fontWeight:800, color:k.color }}>{k.value}</div>
+            <div style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.1em', color:'var(--text-muted)', marginTop:4 }}>{k.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Risk Map Table */}
+      <div className="s-card" style={{ padding:0, overflow:'hidden', marginBottom:24 }}>
+        <div style={{ padding:'16px 24px', borderBottom:'1px solid var(--border)' }}>
+          <h3 style={{ fontWeight:700, fontSize:14, color:'var(--text-primary)' }}>🗺️ Carte des Risques par Gouvernorat</h3>
+          <p style={{ fontSize:11, color:'var(--text-muted)', marginTop:4 }}>Classé par volume de commandes · Score = 0 (faible risque) → 1 (risque élevé)</p>
+        </div>
+        <table style={{ width:'100%', borderCollapse:'collapse' }}>
+          <thead>
+            <tr style={{ background:'var(--bg-hover)' }}>
+              {['#','Gouvernorat','Commandes','CA Zone','Score Risque','Niveau'].map(h => (
+                <th key={h} style={{ padding:'10px 16px', textAlign:'left', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', color:'var(--text-muted)' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {zones.slice(0,20).map((z, i) => {
+              const rs = RISK_STYLE[z.risk_level] || RISK_STYLE['Moyen'];
+              return (
+                <tr key={i} style={{ borderTop:'1px solid var(--border)', transition:'background .15s' }}
+                  onMouseEnter={e => e.currentTarget.style.background='var(--bg-hover)'}
+                  onMouseLeave={e => e.currentTarget.style.background='transparent'}>
+                  <td style={{ padding:'10px 16px', fontSize:12, color:'var(--text-muted)' }}>{i+1}</td>
+                  <td style={{ padding:'10px 16px', fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>{z.gouvernorat || '—'}</td>
+                  <td style={{ padding:'10px 16px', fontSize:13, color:'var(--text-secondary)' }}>{Number(z.nb_commandes).toLocaleString()}</td>
+                  <td style={{ padding:'10px 16px', fontSize:13, fontWeight:600, color:'var(--blue)' }}>
+                    {Number(z.ca_zone).toLocaleString('fr-FR', { maximumFractionDigits:0 })} DT
+                  </td>
+                  <td style={{ padding:'10px 16px' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                      <div style={{ flex:1, height:6, borderRadius:3, background:'var(--bg-hover)', overflow:'hidden', maxWidth:100 }}>
+                        <div style={{ height:'100%', borderRadius:3, width:`${(z.risk_score||0)*100}%`, background:rs.color }} />
+                      </div>
+                      <span style={{ fontSize:12, color:'var(--text-muted)', minWidth:32 }}>{((z.risk_score||0)*100).toFixed(0)}%</span>
+                    </div>
+                  </td>
+                  <td style={{ padding:'10px 16px' }}>
+                    <span style={{ padding:'3px 10px', borderRadius:999, background:rs.bg, border:`1px solid ${rs.border}`, fontSize:11, fontWeight:700, color:rs.color }}>
+                      {z.risk_level}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Bar Chart - Top zones by commands */}
+      <div className="s-card" style={{ padding:24 }}>
+        <h3 style={{ fontWeight:700, fontSize:14, color:'var(--text-primary)', marginBottom:20 }}>Top 10 Gouvernorats par Volume</h3>
+        <ResponsiveContainer width="100%" height={260}>
+          <BarChart data={zones.slice(0,10)} layout="vertical">
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
+            <XAxis type="number" stroke="var(--text-muted)" fontSize={10} tickLine={false} axisLine={false} />
+            <YAxis type="category" dataKey="gouvernorat" stroke="var(--text-muted)" fontSize={10} tickLine={false} axisLine={false} width={100} />
+            <Tooltip formatter={v => [`${v} commandes`]} contentStyle={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:8, fontSize:12 }} />
+            <Bar dataKey="nb_commandes" fill="var(--blue)" radius={[0,6,6,0]} barSize={16} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
 export default CeoDashboard;
+
