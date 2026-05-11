@@ -10,28 +10,28 @@ import BestSellerB2C   from '../predictions/BestSellerB2C';
 import ChurnPrediction from '../predictions/ChurnPrediction';
 import PowerBIEmbed    from '../powerbi/PowerBIEmbed';
 import PredictionsPage from '../predictions/PredictionsPage';
+import { useLanguage } from '../../context/LanguageContext';
+import translations from '../../context/translations';
 
 const API = 'http://127.0.0.1:5000/api';
 const PBI_MARKETING_ID = '84cc7f87-ef92-420f-8649-1c290eb3f926';
 const PBI_BASE = `https://app.powerbi.com/reportEmbed?reportId=${PBI_MARKETING_ID}&autoAuth=true&ctid=604f1a96-cbe8-43f8-abbf-f8eaf5d85730`;
 
-const NAV = [
-  { title: 'Marketing', items: [
-    { id: 'mk-overview',    label: 'Vue Marketing',   icon: '📊' },
-    { id: 'mk-b2c',         label: 'Performance B2C', icon: '🛍' },
-    { id: 'mk-seasonality', label: 'Saisonnalité',    icon: '📅' },
+const buildNav = (t) => [
+  { title: t.nav_mkt_section, items: [
+    { id: 'mk-overview',    label: t.nav_mkt_overview,    icon: '📊' },
+    { id: 'mk-b2c',         label: t.nav_mkt_b2c,         icon: '🛍' },
+    { id: 'mk-seasonality', label: t.nav_mkt_seasonality, icon: '📅' },
   ]},
-  { title: 'Tableau de Bord', items: [
-    { id: 'mk-powerbi',    label: 'Power BI Report',  icon: '📊', badge: 'PBI' },
+  { title: t.nav_mkt_board, items: [
+    { id: 'mk-powerbi', label: t.nav_mkt_board + ' PBI', icon: '📊', badge: 'PBI' },
   ]},
-  { title: 'Prédictions ML', items: [
-    { id: 'mk-hub',        label: 'Hub Prédictions',  icon: '🧠', badge: '6 ML' },
-    { id: 'mk-bestseller', label: 'Best Seller B2C',   icon: '🏆', badge: 'ML' },
-    { id: 'mk-churn',      label: 'Churn Prediction',  icon: '⚠️', badge: 'ML' },
-  ]},
-  { title: 'Intelligence IA', items: [
-    { id: 'mk-rfm',     label: 'Segmentation RFM', icon: '🎯', badge: 'ML' },
-    { id: 'mk-xgboost', label: 'XGBoost Client',   icon: '🤖', badge: 'ML' },
+  { title: t.nav_mkt_ml, items: [
+    { id: 'mk-hub',        label: t.nav_mkt_hub,        icon: '🧠', badge: '6 ML' },
+    { id: 'mk-bestseller', label: t.nav_mkt_bestseller, icon: '🏆', badge: 'ML' },
+    { id: 'mk-churn',      label: t.nav_mkt_churn,      icon: '⚠️', badge: 'ML' },
+    { id: 'mk-rfm',        label: t.nav_mkt_rfm,        icon: '🎯', badge: 'ML' },
+    { id: 'mk-xgboost',    label: t.nav_mkt_xgboost,    icon: '🤖', badge: 'ML' },
   ]},
 ];
 
@@ -250,6 +250,10 @@ const PowerBIPage = () => (
 
 /* ══ MARKETING DASHBOARD ════════════════════════════════════════ */
 const MarketingDashboard = ({ user, onLogout, onUpdateUser }) => {
+  const { lang } = useLanguage();
+  const t = translations[lang];
+  const NAV = buildNav(t);
+
   const [page, setPage] = useState(
     () => sessionStorage.getItem('sougui_page_mkt') || 'mk-overview'
   );
@@ -266,7 +270,7 @@ const MarketingDashboard = ({ user, onLogout, onUpdateUser }) => {
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
       <div style={{ textAlign: 'center' }}>
         <div className="loading-bar" style={{ width: 160, marginBottom: 16 }} />
-        <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Chargement Marketing...</p>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t.dash_loading_mkt}</p>
       </div>
     </div>
   );
@@ -287,18 +291,18 @@ const MarketingDashboard = ({ user, onLogout, onUpdateUser }) => {
                 <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: PURPLE }}>📊 Dashboard Marketing</span>
               </div>
               <h1 style={{ fontFamily: '"Playfair Display", serif', fontSize: 36, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 6 }}>
-                Analyse <span style={{ color: PURPLE }}>Marketing</span>
+                {t.page_mkt_overview}
               </h1>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Segmentation clients · Performance B2C · Saisonnalité</p>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t.nav_mkt_section} · {t.nav_mkt_b2c} · {t.nav_mkt_seasonality}</p>
             </div>
 
             {/* KPIs Marketing */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
               {[
-                { icon: '🛒', label: 'CA B2C Total', value: (totalB2c/1000).toFixed(1), unit: 'K DT', color: PURPLE },
-                { icon: '📈', label: '% du CA Global', value: ((totalB2c/totalCa)*100).toFixed(1), unit: '%', color: '#a855f7' },
-                { icon: '🌐', label: 'E-commerce', value: ((dash?.canalData?.find(d=>d.name==='E-commerce')?.value||0)/1000).toFixed(1), unit: 'K DT', color: '#ec4899' },
-                { icon: '🏪', label: 'Vente Physique', value: ((dash?.canalData?.find(d=>d.name==='Vente Physique')?.value||0)/1000).toFixed(1), unit: 'K DT', color: '#f59e0b' },
+                { icon: '🛒', label: t.kpi_ca_b2c, value: (totalB2c/1000).toFixed(1), unit: 'K DT', color: PURPLE },
+                { icon: '📈', label: t.kpi_pct_global, value: ((totalB2c/totalCa)*100).toFixed(1), unit: '%', color: '#a855f7' },
+                { icon: '🌐', label: t.kpi_ecommerce, value: ((dash?.canalData?.find(d=>d.name==='E-commerce')?.value||0)/1000).toFixed(1), unit: 'K DT', color: '#ec4899' },
+                { icon: '🏪', label: t.kpi_physique, value: ((dash?.canalData?.find(d=>d.name==='Vente Physique')?.value||0)/1000).toFixed(1), unit: 'K DT', color: '#f59e0b' },
               ].map(k => (
                 <div key={k.label} className="kpi-card">
                   <div style={{ fontSize: 28, marginBottom: 12 }}>{k.icon}</div>
@@ -314,8 +318,8 @@ const MarketingDashboard = ({ user, onLogout, onUpdateUser }) => {
             {/* Charts */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
               <div className="s-card" style={{ padding: 24 }}>
-                <h3 style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', marginBottom: 4 }}>Répartition Canaux Marketing</h3>
-                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16 }}>E-commerce vs Physique vs B2B</p>
+                <h3 style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', marginBottom: 4 }}>{t.dash_canal}</h3>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16 }}>{t.kpi_ecommerce} vs {t.kpi_physique} vs B2B</p>
                 <ResponsiveContainer width="100%" height={220}>
                   <PieChart>
                     <Pie data={dash?.canalData || []} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value">
@@ -328,8 +332,8 @@ const MarketingDashboard = ({ user, onLogout, onUpdateUser }) => {
               </div>
 
               <div className="s-card" style={{ padding: 24 }}>
-                <h3 style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', marginBottom: 4 }}>Saisonnalité des Ventes</h3>
-                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16 }}>Top mois par CA — planification campagnes</p>
+                <h3 style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', marginBottom: 4 }}>{t.dash_seasonality}</h3>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16 }}>Top mois par CA</p>
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={dash?.seasonality || []}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
@@ -371,9 +375,9 @@ const MarketingDashboard = ({ user, onLogout, onUpdateUser }) => {
         {page === 'mk-b2c' && dash && (
           <div className="anim-fade-up">
             <h1 style={{ fontFamily: '"Playfair Display", serif', fontSize: 36, fontWeight: 900, marginBottom: 8, color: 'var(--text-primary)' }}>
-              Performance <span style={{ color: PURPLE }}>B2C</span>
+              {t.page_mkt_b2c}
             </h1>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 32 }}>E-commerce + Vente Physique · Analyse détaillée</p>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 32 }}>{t.kpi_ecommerce} + {t.kpi_physique}</p>
             <div style={{ display: 'grid', gap: 20 }}>
               <div className="s-card" style={{ padding: 24 }}>
                 <h3 style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', marginBottom: 16 }}>Évolution CA B2C</h3>
@@ -395,9 +399,9 @@ const MarketingDashboard = ({ user, onLogout, onUpdateUser }) => {
         {page === 'mk-seasonality' && dash && (
           <div className="anim-fade-up">
             <h1 style={{ fontFamily: '"Playfair Display", serif', fontSize: 36, fontWeight: 900, marginBottom: 8, color: 'var(--text-primary)' }}>
-              Analyse <span style={{ color: PURPLE }}>Saisonnalité</span>
+              {t.page_mkt_season}
             </h1>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 32 }}>Planifiez vos campagnes marketing selon les pics de ventes</p>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 32 }}>{t.nav_mkt_seasonality}</p>
             <div className="s-card" style={{ padding: 32 }}>
               <ResponsiveContainer width="100%" height={320}>
                 <BarChart data={dash?.seasonality || []}>

@@ -5,6 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 import translations from '../context/translations';
 import logoUrl from '../assets/Logo.png';
 import FaceLoginModal from '../components/auth/FaceLoginModal';
+import ForgotPassword from '../components/auth/ForgotPassword';
 
 const LoginPage = ({ onLogin, onBack }) => {
   const { theme, toggleTheme } = useTheme();
@@ -16,6 +17,7 @@ const LoginPage = ({ onLogin, onBack }) => {
   const [showPw, setShowPw]     = useState(false);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState('');
+  const [showForgot, setShowForgot] = useState(false);
 
   // Face Auth state
   const [faceModal, setFaceModal]         = useState(null);
@@ -63,6 +65,8 @@ const LoginPage = ({ onLogin, onBack }) => {
 
   const inputWrap = { position: 'relative' };
   const iconStyle = { position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' };
+
+  if (showForgot) return <ForgotPassword onBack={() => setShowForgot(false)} />;
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', background: 'var(--bg-page)', overflow: 'hidden' }}>
@@ -169,9 +173,15 @@ const LoginPage = ({ onLogin, onBack }) => {
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 8 }}>
-                {t.login_password_label}
-              </label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>
+                  {t.login_password_label}
+                </label>
+                <button type="button" onClick={() => setShowForgot(true)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'var(--blue)', fontWeight: 600 }}>
+                  {t.forgot_link}
+                </button>
+              </div>
               <div style={{ position: 'relative' }}>
                 <Lock size={15} style={iconStyle} />
                 <input
@@ -202,6 +212,28 @@ const LoginPage = ({ onLogin, onBack }) => {
                 ? <><div className="anim-spin" style={{ width: 18, height: 18, border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid white', borderRadius: '50%' }} /> {t.login_loading}</>
                 : t.login_btn
               }
+            </button>
+
+            {/* Google login button */}
+            <button type="button"
+              onClick={() => alert('Google OAuth — configuration backend requise')}
+              style={{
+                width: '100%', padding: '13px 16px', borderRadius: 12, marginTop: 2,
+                background: 'transparent', border: '1.5px solid var(--border)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                cursor: 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--text-primary)',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
+              <svg width="18" height="18" viewBox="0 0 48 48">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+              </svg>
+              {t.login_google}
             </button>
           </form>
 

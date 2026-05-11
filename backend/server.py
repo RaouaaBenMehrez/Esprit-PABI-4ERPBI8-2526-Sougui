@@ -750,7 +750,121 @@ def change_password():
     return jsonify({'success': True})
 
 
-# ─── App Settings (Power BI URLs, Gmail SMTP) ─────────────────────────────────
+# ─── Mot de passe oublié ─────────────────────────────────────────────────────
+# Stockage temporaire en mémoire : { token: { user_id, expires_at } }
+_reset_tokens = {}
+
+@app.route('/api/auth/forgot-password', methods=['POST'])
+def forgot_password():
+    """Étape 1 : l'utilisateur soumet son email ou son téléphone.
+    On génère un code à 6 chiffres, on l'enregistre en mémoire (TTL 15 min)
+    et on tente de l'envoyer par email si configuré.
+    """
+    data    = request.json or {}
+    contact = (data.get('contact') or '').strip()   # email ou phone
+    channel = (data.get('channel') or 'email').strip()  # 'email' ou 'sms'
+
+    if not contact:
+        return jsonify({'success': False, 'message': 'Email ou téléphone requis'}), 400
+
+    # Chercher l'utilisateur par email
+    rows = fetch_rows(
+        "SELECT id, username, email FROM users WHERE LOWER(email) = LOWER(%s)",
+        (contact,)
+    )
+    # Si pas trouvé par email, renvoyer quand même success (sécurité — ne pas révéler si le compte existe)
+    token_code = str(random.randint(100000, 999999))
+    if rows:
+        user     = rows[0]
+        user_id  = user['id']
+        expires  = datetime.utcnow() + timedelta(minutes=15)
+        _reset_tokens[token_code] = {'user_id': user_id, 'expires_at': expires}
+        logger.info(f'[ResetPwd] Code {token_code} généré pour user_id={user_id} (expire {expires})')
+
+        if channel == 'email' and user.get('email'):
+            body = f"""<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;
+background:#05080f;color:#e8eef8;padding:32px;border-radius:12px;">
+  <h1 style="color:#4d7fff;font-size:22px;margin:0 0 8px;">Sougui BI Suite</h1>
+  <p style="color:#4d6080;font-size:11px;margin:0 0 24px;">Réinitialisation de mot de passe</p>
+  <div style="background:rgba(30,90,255,0.08);border:1px solid rgba(30,90,255,0.2);
+border-radius:10px;padding:24px;text-align:center;">
+    <p style="color:#a0b0cc;margin:0 0 12px;">Votre code de réinitialisation est :</p>
+    <div style="font-size:48px;font-weight:900;letter-spacing:12px;color:#fff;">{token_code}</div>
+    <p style="color:#4d6080;font-size:11px;margin:16px 0 0;">Valide 15 minutes · Ne pas partager</p>
+  </div>
+  <p style="color:#2d3f5e;font-size:10px;text-align:center;margin-top:20px;">
+  Sougui BI · ESPRIT 4ERPBI8</p>
+</div>"""
+            _send_gmail(user['email'], '[Sougui] Code de réinitialisation', body)
+    else:
+        # Compte inexistant — on génère quand même un code factice (ne pas révéler)
+        logger.info(f'[ResetPwd] Contact {contact} introuvable — réponse neutre')
+
+    return jsonify({'success': True, 'message': 'Si ce compte existe, un code a été envoyé.'})
+
+
+@app.route('/api/auth/verify-reset-code', methods=['POST'])
+def verify_reset_code():
+    """Étape 2 : vérifier le code à 6 chiffres."""
+    data = request.json or {}
+    code = (data.get('code') or '').strip()
+
+    if not code:
+        return jsonify({'success': False, 'message': 'Code manquant'}), 400
+
+    entry = _reset_tokens.get(code)
+    if not entry:
+        return jsonify({'success': False, 'message': 'Code invalide'}), 401
+
+    if datetime.utcnow() > entry['expires_at']:
+        del _reset_tokens[code]
+        return jsonify({'success': False, 'message': 'Code expiré'}), 401
+
+    return jsonify({'success': True, 'user_id': entry['user_id']})
+
+
+@app.route('/api/auth/reset-password', methods=['POST'])
+def reset_password():
+    """Étape 3 : définir le nouveau mot de passe (après vérification du code)."""
+    data         = request.json or {}
+    code         = (data.get('code') or '').strip()
+    new_password = (data.get('new_password') or '').strip()
+
+    if not code or not new_password:
+        return jsonify({'success': False, 'message': 'Code et nouveau mot de passe requis'}), 400
+
+    if len(new_password) < 6:
+        return jsonify({'success': False, 'message': 'Mot de passe trop court (min 6 caractères)'}), 400
+
+    entry = _reset_tokens.get(code)
+    if not entry:
+        return jsonify({'success': False, 'message': 'Code invalide ou expiré'}), 401
+
+    if datetime.utcnow() > entry['expires_at']:
+        del _reset_tokens[code]
+        return jsonify({'success': False, 'message': 'Code expiré'}), 401
+
+    user_id  = entry['user_id']
+    new_hash = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
+    conn     = get_db()
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE users SET password=%s WHERE id=%s", (new_hash, user_id))
+        conn.commit()
+        del _reset_tokens[code]
+        logger.info(f'[ResetPwd] Mot de passe réinitialisé pour user_id={user_id}')
+        _push_notification(user_id, 'Mot de passe réinitialisé',
+            'Votre mot de passe a été réinitialisé avec succès.', 'success', send_email=True)
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        conn.close()
+
+    return jsonify({'success': True, 'message': 'Mot de passe réinitialisé avec succès.'})
+
+
+
 @app.route('/api/settings', methods=['GET'])
 def get_settings():
     rows = fetch_rows("SELECT key, value FROM app_settings")

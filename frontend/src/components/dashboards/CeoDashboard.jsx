@@ -12,32 +12,29 @@ import PriceSimulator     from '../predictions/PriceSimulator';
 import SupplierScoring    from '../predictions/SupplierScoring';
 import PowerBIEmbed      from '../powerbi/PowerBIEmbed';
 import PredictionsPage   from '../predictions/PredictionsPage';
+import { useLanguage } from '../../context/LanguageContext';
+import translations from '../../context/translations';
 
 const API = 'http://127.0.0.1:5000/api';
 const PBI_CEO_ID = '8e3da978-93c5-4e23-bec1-b0ebfb0cdb4c';
 const PBI_BASE = `https://app.powerbi.com/reportEmbed?reportId=${PBI_CEO_ID}&autoAuth=true&ctid=604f1a96-cbe8-43f8-abbf-f8eaf5d85730`;
 
-const NAV = [
-  { title: 'Vue Globale', items: [
-    { id: 'overview',    label: 'Vue d\'ensemble', icon: '🏠' },
-    { id: 'revenue',     label: 'CA & Revenus',    icon: '💰' },
-    { id: 'clients-ceo', label: 'Clients B2B',     icon: '🤝' },
+const buildNav = (t) => [
+  { title: t.nav_ceo_global, items: [
+    { id: 'overview',    label: t.nav_ceo_overview,  icon: '🏠' },
+    { id: 'revenue',     label: t.nav_ceo_revenue,   icon: '💰' },
+    { id: 'clients-ceo', label: t.nav_ceo_clients,   icon: '🤝' },
   ]},
-  { title: 'Tableau de Bord', items: [
-    { id: 'powerbi',     label: 'Power BI Report',  icon: '📊', badge: 'PBI' },
-    { id: 'bcg',         label: 'BCG Matrix',       icon: '🎯', badge: 'DWH' },
-    { id: 'logistique',  label: 'Logistique',       icon: '🚚', badge: 'DWH' },
+  { title: t.nav_ceo_board, items: [
+    { id: 'powerbi',    label: t.nav_ceo_powerbi,    icon: '📊', badge: 'PBI' },
+    { id: 'bcg',        label: t.nav_ceo_bcg,        icon: '🎯', badge: 'DWH' },
+    { id: 'logistique', label: t.nav_ceo_logistique, icon: '🚚', badge: 'DWH' },
   ]},
-  { title: 'Prédictions ML', items: [
-    { id: 'predictions-hub',  label: 'Hub Prédictions',  icon: '🧠', badge: '6 ML' },
-    { id: 'b2b-demand',       label: 'B2B Demand',       icon: '📈', badge: 'ML' },
-    { id: 'price-simulator',  label: 'Price Simulator',  icon: '💲', badge: 'ML' },
-    { id: 'supplier-scoring', label: 'Supplier Scoring', icon: '🏭', badge: 'ML' },
-  ]},
-  { title: 'Intelligence IA', items: [
-    { id: 'forecast',    label: 'Prévision Prophet', icon: '🔮', badge: 'IA' },
-    { id: 'ai-insights', label: 'Insights Stratégie', icon: '🧠', badge: 'GPT' },
-    { id: 'versions',    label: 'Versioning Modèles', icon: '📦', badge: 'v1.2' },
+  { title: t.nav_ceo_ml, items: [
+    { id: 'predictions-hub',  label: t.nav_ceo_hub,      icon: '🧠', badge: '6 ML' },
+    { id: 'b2b-demand',       label: t.nav_ceo_b2b,      icon: '📈', badge: 'ML' },
+    { id: 'price-simulator',  label: t.nav_ceo_price,    icon: '💲', badge: 'ML' },
+    { id: 'supplier-scoring', label: t.nav_ceo_supplier,  icon: '🏭', badge: 'ML' },
   ]},
 ];
 
@@ -108,6 +105,81 @@ const ProphetForecast = () => {
     } catch (e) { setErr(`Serveur backend non disponible (port 5000) — ${e.message}`); }
     finally { setLoading(false); }
   };
+
+  const maxVal = data ? Math.max(...data.map(d => d.prediction)) : 1;
+
+  return (
+    <div className="predict-inline">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div>
+          <h4 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>🔮 Prévision CA — Prophet AI</h4>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Prochains 6 mois · Intervalle de confiance 95% · Facebook Prophet</p>
+        </div>
+        <button onClick={run} disabled={loading} className="btn-primary" style={{ padding: '8px 16px', fontSize: 12 }}>
+          {loading ? <Loader2 size={13} className="anim-spin" /> : <BrainCircuit size={13} />}
+          {loading ? 'Calcul...' : 'Lancer Prophet'}
+        </button>
+      </div>
+
+      {err && <div style={{ padding: '10px 14px', borderRadius: 10, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', color: '#ef4444', fontSize: 12 }}>⚠ {err}</div>}
+
+      {!data && !loading && !err && (
+        <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--text-muted)' }}>
+          <BrainCircuit size={36} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
+          <p style={{ fontSize: 13 }}>Cliquez sur "Lancer Prophet" pour générer les prévisions des 6 prochains mois</p>
+        </div>
+      )}
+
+      {data && (
+        <div>
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={data.map(d => ({ ...d, name: d.mois }))}>
+              <defs>
+                <linearGradient id="gradCA" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="var(--blue)" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="var(--blue)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+              <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={10} tickLine={false} axisLine={false} />
+              <YAxis stroke="var(--text-muted)" fontSize={10} tickLine={false} axisLine={false}
+                tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
+              <Tooltip content={<Tooltip_ />} />
+              <Area type="monotone" dataKey="prediction" stroke="var(--blue)" strokeWidth={2.5}
+                fill="url(#gradCA)" dot={{ fill: 'var(--blue)', r: 4 }} />
+            </AreaChart>
+          </ResponsiveContainer>
+
+          {/* All 6 months grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8, marginTop: 14 }}>
+            {data.map((d, i) => {
+              const prev = i > 0 ? data[i-1].prediction : d.prediction;
+              const trend = d.prediction >= prev;
+              const pct = maxVal > 0 ? (d.prediction / maxVal) * 100 : 0;
+              return (
+                <div key={d.mois} style={{ padding: '10px 8px', borderRadius: 10, background: 'var(--bg-hover)', textAlign: 'center', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>{d.mois}</div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--blue)', lineHeight: 1 }}>{(d.prediction/1000).toFixed(1)}<span style={{fontSize:9}}>K</span></div>
+                  <div style={{ fontSize: 9, color: trend ? '#22c55e' : '#ef4444', marginTop: 3, fontWeight: 600 }}>{trend ? '▲' : '▼'} {Math.abs(((d.prediction - prev) / (prev || 1)) * 100).toFixed(0)}%</div>
+                  <div style={{ height: 2, borderRadius: 9999, marginTop: 6, background: `linear-gradient(90deg, var(--blue), transparent)`, opacity: pct / 100 * 0.8 + 0.2 }} />
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
+            <p style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+              Confiance 95% : [{data[0]?.min?.toLocaleString('fr-FR', {maximumFractionDigits:0})} – {data[0]?.max?.toLocaleString('fr-FR', {maximumFractionDigits:0})} DT]
+            </p>
+            <p style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+              Total prévu : {data.reduce((s,d)=>s+d.prediction,0).toLocaleString('fr-FR',{maximumFractionDigits:0})} DT
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 /* ── Model Explorer (Versioning) ───────────────────────────────── */
 const ModelExplorer = () => {
@@ -201,81 +273,6 @@ const ModelExplorer = () => {
 };
 
 
-  const maxVal = data ? Math.max(...data.map(d => d.prediction)) : 1;
-
-  return (
-    <div className="predict-inline">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <div>
-          <h4 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>🔮 Prévision CA — Prophet AI</h4>
-          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Prochains 6 mois · Intervalle de confiance 95% · Facebook Prophet</p>
-        </div>
-        <button onClick={run} disabled={loading} className="btn-primary" style={{ padding: '8px 16px', fontSize: 12 }}>
-          {loading ? <Loader2 size={13} className="anim-spin" /> : <BrainCircuit size={13} />}
-          {loading ? 'Calcul...' : 'Lancer Prophet'}
-        </button>
-      </div>
-
-      {err && <div style={{ padding: '10px 14px', borderRadius: 10, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', color: '#ef4444', fontSize: 12 }}>⚠ {err}</div>}
-
-      {!data && !loading && !err && (
-        <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--text-muted)' }}>
-          <BrainCircuit size={36} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
-          <p style={{ fontSize: 13 }}>Cliquez sur "Lancer Prophet" pour générer les prévisions des 6 prochains mois</p>
-        </div>
-      )}
-
-      {data && (
-        <div>
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={data.map(d => ({ ...d, name: d.mois }))}>
-              <defs>
-                <linearGradient id="gradCA" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--blue)" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="var(--blue)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={10} tickLine={false} axisLine={false} />
-              <YAxis stroke="var(--text-muted)" fontSize={10} tickLine={false} axisLine={false}
-                tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
-              <Tooltip content={<Tooltip_ />} />
-              <Area type="monotone" dataKey="prediction" stroke="var(--blue)" strokeWidth={2.5}
-                fill="url(#gradCA)" dot={{ fill: 'var(--blue)', r: 4 }} />
-            </AreaChart>
-          </ResponsiveContainer>
-
-          {/* All 6 months grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8, marginTop: 14 }}>
-            {data.map((d, i) => {
-              const prev = i > 0 ? data[i-1].prediction : d.prediction;
-              const trend = d.prediction >= prev;
-              const pct = maxVal > 0 ? (d.prediction / maxVal) * 100 : 0;
-              return (
-                <div key={d.mois} style={{ padding: '10px 8px', borderRadius: 10, background: 'var(--bg-hover)', textAlign: 'center', border: '1px solid var(--border)' }}>
-                  <div style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>{d.mois}</div>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--blue)', lineHeight: 1 }}>{(d.prediction/1000).toFixed(1)}<span style={{fontSize:9}}>K</span></div>
-                  <div style={{ fontSize: 9, color: trend ? '#22c55e' : '#ef4444', marginTop: 3, fontWeight: 600 }}>{trend ? '▲' : '▼'} {Math.abs(((d.prediction - prev) / (prev || 1)) * 100).toFixed(0)}%</div>
-                  <div style={{ height: 2, borderRadius: 9999, marginTop: 6, background: `linear-gradient(90deg, var(--blue), transparent)`, opacity: pct / 100 * 0.8 + 0.2 }} />
-                </div>
-              );
-            })}
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
-            <p style={{ fontSize: 10, color: 'var(--text-muted)' }}>
-              Confiance 95% : [{data[0]?.min?.toLocaleString('fr-FR', {maximumFractionDigits:0})} – {data[0]?.max?.toLocaleString('fr-FR', {maximumFractionDigits:0})} DT]
-            </p>
-            <p style={{ fontSize: 10, color: 'var(--text-muted)' }}>
-              Total prévu : {data.reduce((s,d)=>s+d.prediction,0).toLocaleString('fr-FR',{maximumFractionDigits:0})} DT
-            </p>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
 /* ── Power BI Page ────────────────────────────────────────────────── */
 const PowerBIPage = ({ role }) => {
   const src = role === 'ceo'
@@ -308,6 +305,10 @@ const PowerBIPage = ({ role }) => {
 
 /* ══ CEO DASHBOARD ═══════════════════════════════════════════════ */
 const CeoDashboard = ({ user, onLogout, onUpdateUser }) => {
+  const { lang } = useLanguage();
+  const t = translations[lang];
+  const NAV = buildNav(t);
+
   const [page, setPage] = useState(
     () => sessionStorage.getItem('sougui_page_ceo') || 'overview'
   );
@@ -363,7 +364,7 @@ const CeoDashboard = ({ user, onLogout, onUpdateUser }) => {
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
       <div style={{ textAlign: 'center' }}>
         <div className="loading-bar" style={{ width: 160, marginBottom: 16 }} />
-        <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Chargement des données CEO...</p>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t.dash_loading_ceo}</p>
       </div>
     </div>
   );
@@ -433,15 +434,15 @@ const CeoDashboard = ({ user, onLogout, onUpdateUser }) => {
 
             {/* KPIs */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
-              <KPI icon="💰" label="CA Total" value={(dash?.total_ca / 1000)?.toFixed(1)} unit="K DT" trend={8.5} />
-              <KPI icon="📦" label="Transactions" value={dash?.kpis?.[1]?.value} unit="" trend={3.2} />
-              <KPI icon="🏢" label="Revenue B2B" value={dash?.kpis?.[2]?.value} unit={dash?.kpis?.[2]?.unit} trend={5.1} color="#7c3aed" />
-              <KPI icon="🛒" label="Revenue B2C" value={dash?.kpis?.[3]?.value} unit={dash?.kpis?.[3]?.unit} trend={12.4} color="#059669" />
+              <KPI icon="💰" label={t.kpi_ca_total} value={(dash?.total_ca / 1000)?.toFixed(1)} unit="K DT" trend={8.5} />
+              <KPI icon="📦" label={t.kpi_transactions} value={dash?.kpis?.[1]?.value} unit="" trend={3.2} />
+              <KPI icon="🏢" label={t.kpi_revenue_b2b} value={dash?.kpis?.[2]?.value} unit={dash?.kpis?.[2]?.unit} trend={5.1} color="#7c3aed" />
+              <KPI icon="🛒" label={t.kpi_revenue_b2c} value={dash?.kpis?.[3]?.value} unit={dash?.kpis?.[3]?.unit} trend={12.4} color="#059669" />
             </div>
 
             {/* Charts Row 1 */}
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20, marginBottom: 20 }}>
-              <ChartCard title="Évolution CA Mensuel" subtitle="Chiffre d'affaires par mois">
+              <ChartCard title={t.dash_evolution_ca} subtitle="Chiffre d'affaires par mois">
                 <ResponsiveContainer width="100%" height={240}>
                   <AreaChart data={dash?.mainChart || []}>
                     <defs>
@@ -459,7 +460,7 @@ const CeoDashboard = ({ user, onLogout, onUpdateUser }) => {
                 </ResponsiveContainer>
               </ChartCard>
 
-              <ChartCard title="Répartition Canaux" subtitle="B2B · E-commerce · Physique">
+              <ChartCard title={t.dash_repartition} subtitle="B2B · E-commerce · Physique">
                 <ResponsiveContainer width="100%" height={240}>
                   <PieChart>
                     <Pie data={dash?.canalData || []} cx="50%" cy="50%" innerRadius={55} outerRadius={85}
@@ -478,7 +479,7 @@ const CeoDashboard = ({ user, onLogout, onUpdateUser }) => {
 
             {/* Seasonality + Insights */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
-              <ChartCard title="Saisonnalité des Ventes" subtitle="Top 5 mois par CA">
+              <ChartCard title={t.dash_seasonality} subtitle="Top 5 mois par CA">
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={dash?.seasonality || []}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />

@@ -10,6 +10,8 @@ import DeliveryAnalysis   from '../predictions/DeliveryAnalysis';
 import B2BDemandPrediction from '../predictions/B2BDemandPrediction';
 import PriceSimulator      from '../predictions/PriceSimulator';
 import PowerBIEmbed        from '../powerbi/PowerBIEmbed';
+import { useLanguage } from '../../context/LanguageContext';
+import translations from '../../context/translations';
 
 const API     = 'http://127.0.0.1:5000/api';
 const AGENT   = 'http://localhost:8000';
@@ -17,23 +19,21 @@ const PBI_COMMERCIAL_ID = 'c041af2f-3e58-4613-a5f3-d4e8fa3b46a3';
 const PBI_BASE = `https://app.powerbi.com/reportEmbed?reportId=${PBI_COMMERCIAL_ID}&autoAuth=true&ctid=604f1a96-cbe8-43f8-abbf-f8eaf5d85730`;
 const GREEN   = '#059669';
 
-const NAV = [
-  { title: 'Commercial', items: [
-    { id: 'cm-overview', label: 'Vue Commerciale', icon: '💼' },
-    { id: 'cm-ventes',   label: 'Transactions',    icon: '📋' },
-    { id: 'cm-clients',  label: 'Clients B2B',     icon: '🤝' },
+const buildNav = (t) => [
+  { title: t.nav_com_section, items: [
+    { id: 'cm-overview', label: t.nav_com_overview, icon: '💼' },
+    { id: 'cm-ventes',   label: t.nav_com_ventes,   icon: '📋' },
+    { id: 'cm-clients',  label: t.nav_com_clients,  icon: '🤝' },
   ]},
-  { title: 'Tableau de Bord', items: [
-    { id: 'cm-powerbi',  label: 'Power BI Report',   icon: '📊', badge: 'PBI' },
+  { title: t.nav_com_board, items: [
+    { id: 'cm-powerbi', label: 'Power BI Report', icon: '📊', badge: 'PBI' },
   ]},
-  { title: 'Prédictions ML', items: [
-    { id: 'cm-delivery',  label: 'Delivery Analysis', icon: '🗺️', badge: 'ML' },
-    { id: 'cm-b2b',      label: 'B2B Demand',         icon: '📈', badge: 'ML' },
-    { id: 'cm-price',    label: 'Price Simulator',    icon: '💲', badge: 'ML' },
-  ]},
-  { title: 'Intelligence IA', items: [
-    { id: 'cm-regression', label: 'RF — Régression CA', icon: '📈', badge: 'ML' },
-    { id: 'cm-agent',      label: 'Sales Agent IA',     icon: '🤖', badge: 'Live' },
+  { title: t.nav_com_ml, items: [
+    { id: 'cm-delivery',   label: t.nav_com_delivery,   icon: '🗺️', badge: 'ML' },
+    { id: 'cm-b2b',        label: t.nav_com_b2b,        icon: '📈', badge: 'ML' },
+    { id: 'cm-price',      label: t.nav_com_price,      icon: '💲', badge: 'ML' },
+    { id: 'cm-regression', label: t.nav_com_regression, icon: '📈', badge: 'ML' },
+    { id: 'cm-agent',      label: t.nav_com_agent,      icon: '🤖', badge: 'Live' },
   ]},
 ];
 
@@ -337,6 +337,10 @@ const PowerBIPage = () => (
 
 /* ══ COMMERCIAL DASHBOARD ═══════════════════════════════════════ */
 const CommercialDashboard = ({ user, onLogout, onUpdateUser }) => {
+  const { lang } = useLanguage();
+  const t = translations[lang];
+  const NAV = buildNav(t);
+
   const [page, setPage] = useState(
     () => sessionStorage.getItem('sougui_page_com') || 'cm-overview'
   );
@@ -361,7 +365,7 @@ const CommercialDashboard = ({ user, onLogout, onUpdateUser }) => {
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
       <div style={{ textAlign: 'center' }}>
         <div className="loading-bar" style={{ width: 160, marginBottom: 16 }} />
-        <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Chargement données commerciales...</p>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t.dash_loading_com}</p>
       </div>
     </div>
   );
@@ -404,10 +408,10 @@ const CommercialDashboard = ({ user, onLogout, onUpdateUser }) => {
             {/* KPIs */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
               {[
-                { icon: '📦', label: 'Transactions', value: dash?.kpis?.[1]?.value, unit: '', color: GREEN },
-                { icon: '🏢', label: 'Revenue B2B', value: dash?.kpis?.[2]?.value, unit: dash?.kpis?.[2]?.unit, color: '#059669' },
-                { icon: '💰', label: 'CA Total', value: (dash?.total_ca/1000)?.toFixed(1), unit: 'K DT', color: '#10b981' },
-                { icon: '📊', label: 'Ratio B2B', value: ((dash?.ratio || 0) * 100).toFixed(1), unit: '%', color: '#34d399' },
+                { icon: '📦', label: t.kpi_transactions, value: dash?.kpis?.[1]?.value, unit: '', color: GREEN },
+                { icon: '🏢', label: t.kpi_revenue_b2b, value: dash?.kpis?.[2]?.value, unit: dash?.kpis?.[2]?.unit, color: '#059669' },
+                { icon: '💰', label: t.kpi_ca_total, value: (dash?.total_ca/1000)?.toFixed(1), unit: 'K DT', color: '#10b981' },
+                { icon: '📊', label: t.kpi_ratio_b2b, value: ((dash?.ratio || 0) * 100).toFixed(1), unit: '%', color: '#34d399' },
               ].map(k => (
                 <div key={k.label} className="kpi-card">
                   <div style={{ fontSize: 26, marginBottom: 12 }}>{k.icon}</div>
@@ -423,7 +427,7 @@ const CommercialDashboard = ({ user, onLogout, onUpdateUser }) => {
             {/* Charts */}
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20, marginBottom: 20 }}>
               <div className="s-card" style={{ padding: 24 }}>
-                <h3 style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', marginBottom: 16 }}>Évolution CA</h3>
+                <h3 style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', marginBottom: 16 }}>{t.dash_evolution_ca}</h3>
                 <ResponsiveContainer width="100%" height={220}>
                   <AreaChart data={dash?.mainChart || []}>
                     <defs>
@@ -442,7 +446,7 @@ const CommercialDashboard = ({ user, onLogout, onUpdateUser }) => {
               </div>
 
               <div className="s-card" style={{ padding: 24 }}>
-                <h3 style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', marginBottom: 4 }}>Top Clients B2B</h3>
+                <h3 style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', marginBottom: 4 }}>{t.dash_top_clients}</h3>
                 <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16 }}>Par CA Total</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {topClients.map((c, i) => (
@@ -498,11 +502,11 @@ const CommercialDashboard = ({ user, onLogout, onUpdateUser }) => {
                 type="text"
                 value={salesSearch}
                 onChange={e => setSalesSearch(e.target.value)}
-                placeholder="Rechercher par date, canal..."
+                placeholder={t.dash_search_ph}
               />
               {salesSearch && (
                 <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>
-                  {filteredSales.length} résultat(s)
+                  {filteredSales.length} {t.dash_results}
                 </span>
               )}
             </div>
@@ -545,11 +549,11 @@ const CommercialDashboard = ({ user, onLogout, onUpdateUser }) => {
                 type="text"
                 value={clientSearch}
                 onChange={e => setClientSearch(e.target.value)}
-                placeholder="Rechercher par nom, type, segment RFM..."
+                placeholder={t.dash_search_clients}
               />
               {clientSearch && (
                 <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>
-                  {filteredClients.length} client(s)
+                  {filteredClients.length} {t.dash_clients_label}
                 </span>
               )}
             </div>
@@ -563,7 +567,7 @@ const CommercialDashboard = ({ user, onLogout, onUpdateUser }) => {
                   </div>
                   {c.rfm_segment && <div style={{ fontSize: 10, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 10 }}>{c.rfm_segment}</div>}
                   <div className="divider" style={{ marginBottom: 10 }} />
-                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>Total dépensé</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>{t.dash_total_spent}</div>
                   <div style={{ fontSize: 24, fontWeight: 800, color: GREEN }}>{Number(c.total_spent).toLocaleString()} DT</div>
                 </div>
               ))}
