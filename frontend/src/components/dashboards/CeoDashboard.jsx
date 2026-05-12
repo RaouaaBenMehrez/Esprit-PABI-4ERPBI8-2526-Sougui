@@ -14,6 +14,8 @@ import PowerBIEmbed      from '../powerbi/PowerBIEmbed';
 import PredictionsPage   from '../predictions/PredictionsPage';
 import { useLanguage } from '../../context/LanguageContext';
 import translations from '../../context/translations';
+import SwimmingShapes from '../ui/SwimmingShapes';
+import GuidedTour from '../ui/GuidedTour';
 
 const API = 'http://127.0.0.1:5000/api';
 const PBI_CEO_ID = '8e3da978-93c5-4e23-bec1-b0ebfb0cdb4c';
@@ -371,6 +373,8 @@ const CeoDashboard = ({ user, onLogout, onUpdateUser }) => {
 
   return (
     <AppLayout user={user} activePage={page} setActivePage={handleSetPage} onLogout={onLogout} navItems={NAV}>
+      {/* Guided Tour — launches automatically on first login */}
+      <GuidedTour role={user?.role} />
       <div style={{ padding: '40px' }}>
 
         {/* ── Overview ── */}
@@ -386,11 +390,14 @@ const CeoDashboard = ({ user, onLogout, onUpdateUser }) => {
             </div>
 
             {/* Banner */}
-            <div style={{
+            <div data-tour="ceo-banner" style={{
               borderRadius: 20, padding: '32px 40px', marginBottom: 32,
               background: 'linear-gradient(135deg, #0f2d80, #1e5aff 60%, #3d7eff)',
               position: 'relative', overflow: 'hidden',
+              cursor: 'default',
             }}>
+              {/* 3D Swimming Shapes */}
+              <SwimmingShapes />
               <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: 240, height: 240, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }} />
               <div style={{ position: 'relative', zIndex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -433,7 +440,7 @@ const CeoDashboard = ({ user, onLogout, onUpdateUser }) => {
             </div>
 
             {/* KPIs */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
+            <div data-tour="ceo-kpis" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
               <KPI icon="💰" label={t.kpi_ca_total} value={(dash?.total_ca / 1000)?.toFixed(1)} unit="K DT" trend={8.5} />
               <KPI icon="📦" label={t.kpi_transactions} value={dash?.kpis?.[1]?.value} unit="" trend={3.2} />
               <KPI icon="🏢" label={t.kpi_revenue_b2b} value={dash?.kpis?.[2]?.value} unit={dash?.kpis?.[2]?.unit} trend={5.1} color="#7c3aed" />

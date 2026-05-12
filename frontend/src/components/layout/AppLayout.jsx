@@ -23,7 +23,7 @@ const AppLayout = ({ user, activePage, setActivePage, onLogout, navItems, childr
       {/* ── SIDEBAR ── */}
       <aside className="sidebar">
         {/* Logo */}
-        <div style={{ padding: '28px 20px 20px', borderBottom: '1px solid var(--border)' }}>
+        <div data-tour="logo" style={{ padding: '28px 20px 20px', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
             <img src={logoUrl} alt="Sougui" style={{ width: 32, height: 32, objectFit: 'contain' }}
               onError={e => { e.target.style.display = 'none'; }} />
@@ -34,7 +34,9 @@ const AppLayout = ({ user, activePage, setActivePage, onLogout, navItems, childr
           </div>
 
           {/* User Badge */}
-          <div onClick={() => setActivePage('settings')}
+          <div
+            data-tour="user-badge"
+            onClick={() => setActivePage('settings')}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: roleConf.bg, border: `1px solid ${roleConf.color}33`, cursor: 'pointer', transition: 'opacity 0.2s' }}
             onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
             onMouseLeave={e => e.currentTarget.style.opacity = '1'}
@@ -53,7 +55,7 @@ const AppLayout = ({ user, activePage, setActivePage, onLogout, navItems, childr
         </div>
 
         {/* Nav */}
-        <nav style={{ flex: 1, padding: '16px 0', overflowY: 'auto' }}>
+        <nav data-tour="sidebar-nav" style={{ flex: 1, padding: '16px 0', overflowY: 'auto' }}>
           {navItems.map(section => (
             <div key={section.title} style={{ marginBottom: 8 }}>
               <div style={{ padding: '6px 20px', fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--text-muted)' }}>
@@ -83,7 +85,9 @@ const AppLayout = ({ user, activePage, setActivePage, onLogout, navItems, childr
             <span style={{ fontSize: 11, fontWeight: 600, color: '#22c55e' }}>PostgreSQL · Live</span>
           </div>
 
-          <button onClick={() => setActivePage('settings')}
+          <button
+            data-tour="settings-btn"
+            onClick={() => setActivePage('settings')}
             className={`sidebar-item ${activePage === 'settings' ? 'active' : ''}`}
             style={{ borderRadius: 10, padding: '8px 12px' }}>
             <Settings size={15} />
@@ -91,7 +95,7 @@ const AppLayout = ({ user, activePage, setActivePage, onLogout, navItems, childr
           </button>
 
           {/* Logout only at bottom */}
-          <button onClick={onLogout} className="btn-ghost"
+          <button data-tour="logout-btn" onClick={onLogout} className="btn-ghost"
             style={{ width: '100%', justifyContent: 'center', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10, padding: '8px', color: '#ef4444', gap: 8 }}>
             <LogOut size={15} />
             <span style={{ fontSize: 12, fontWeight: 600 }}>{lang === 'fr' ? 'Déconnexion' : 'Sign out'}</span>
@@ -130,6 +134,7 @@ const AppLayout = ({ user, activePage, setActivePage, onLogout, navItems, childr
 
             {/* FR / EN toggle */}
             <button
+              data-tour="lang-btn"
               onClick={toggleLang}
               title={lang === 'fr' ? 'Switch to English' : 'Passer en Français'}
               style={{

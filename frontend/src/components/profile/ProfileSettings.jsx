@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Lock, Users, Shield, BarChart2, Mail, Eye, EyeOff, Trash2, Plus, Save, TestTube, Camera } from 'lucide-react';
+import { User, Lock, Users, Shield, BarChart2, Mail, Eye, EyeOff, Trash2, Plus, Save, TestTube, Camera, Compass } from 'lucide-react';
 import FaceLoginModal from '../auth/FaceLoginModal';
 
 const API = 'http://127.0.0.1:5000/api';
@@ -572,6 +572,35 @@ const ProfileSettings = ({ user, onUpdateUser }) => {
                 </button>
               );
             })}
+          </div>
+
+          {/* Restart Tour Button */}
+          <div style={{
+            marginTop: 16, padding: '14px 18px',
+            background: 'var(--bg-card)', border: '1px solid var(--border)',
+            borderRadius: 16, textAlign: 'center',
+          }}>
+            <Compass size={20} style={{ color: rc, marginBottom: 8, display: 'block', margin: '0 auto 8px' }} />
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>Guide Interactif</div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 10, lineHeight: 1.5 }}>Relancer le tour de votre espace</div>
+            <button
+              onClick={() => {
+                const safeRole = user?.role === 'admin' ? 'ceo' : (user?.role || 'ceo');
+                localStorage.removeItem(`sougui_tour_done_${safeRole}`);
+                window.location.reload();
+              }}
+              style={{
+                width: '100%', padding: '9px 12px', borderRadius: 10,
+                background: `${rc}15`, border: `1px solid ${rc}35`,
+                cursor: 'pointer', fontSize: 11, fontWeight: 700, color: rc,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = `${rc}28`; }}
+              onMouseLeave={e => { e.currentTarget.style.background = `${rc}15`; }}
+            >
+              <Compass size={13} /> Relancer le guide
+            </button>
           </div>
         </div>
 

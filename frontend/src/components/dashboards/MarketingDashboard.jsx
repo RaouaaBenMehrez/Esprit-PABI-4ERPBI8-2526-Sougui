@@ -12,6 +12,8 @@ import PowerBIEmbed    from '../powerbi/PowerBIEmbed';
 import PredictionsPage from '../predictions/PredictionsPage';
 import { useLanguage } from '../../context/LanguageContext';
 import translations from '../../context/translations';
+import ConstellationCanvas from '../ui/ConstellationCanvas';
+import GuidedTour from '../ui/GuidedTour';
 
 const API = 'http://127.0.0.1:5000/api';
 const PBI_MARKETING_ID = '84cc7f87-ef92-420f-8649-1c290eb3f926';
@@ -281,6 +283,7 @@ const MarketingDashboard = ({ user, onLogout, onUpdateUser }) => {
 
   return (
     <AppLayout user={user} activePage={page} setActivePage={handleSetPage} onLogout={onLogout} navItems={NAV}>
+      <GuidedTour role={user?.role} />
       <div style={{ padding: 40 }}>
 
         {/* ── Overview Marketing ── */}
@@ -294,6 +297,32 @@ const MarketingDashboard = ({ user, onLogout, onUpdateUser }) => {
                 {t.page_mkt_overview}
               </h1>
               <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t.nav_mkt_section} · {t.nav_mkt_b2c} · {t.nav_mkt_seasonality}</p>
+            </div>
+
+            {/* ✨ Constellation Hero Banner */}
+            <div style={{
+              borderRadius: 20, padding: '32px 40px', marginBottom: 32,
+              background: 'linear-gradient(135deg, #2e0d6e, #7c3aed 60%, #a855f7)',
+              position: 'relative', overflow: 'hidden', cursor: 'default',
+              minHeight: 130,
+            }}>
+              <ConstellationCanvas color="#c4b5fd" />
+              <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: 200, height: 200, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }} />
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.6)' }}>Marketing Intelligence</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '2px 10px', borderRadius: 999, background: 'rgba(196,181,253,0.15)', border: '1px solid rgba(196,181,253,0.3)' }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#c4b5fd', boxShadow: '0 0 6px #c4b5fd', animation: 'pulse 2s infinite' }} />
+                    <span style={{ fontSize: 10, fontWeight: 700, color: '#c4b5fd', letterSpacing: '0.1em' }}>LIVE</span>
+                  </div>
+                </div>
+                <h2 style={{ fontFamily: '"Playfair Display", serif', fontSize: 28, fontWeight: 900, color: '#fff', marginBottom: 4 }}>
+                  {t.page_mkt_overview}
+                </h2>
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>
+                  Segmentation · Canaux B2C · Prédictions KMeans & XGBoost
+                </p>
+              </div>
             </div>
 
             {/* KPIs Marketing */}

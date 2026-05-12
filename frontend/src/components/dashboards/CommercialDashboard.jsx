@@ -12,6 +12,8 @@ import PriceSimulator      from '../predictions/PriceSimulator';
 import PowerBIEmbed        from '../powerbi/PowerBIEmbed';
 import { useLanguage } from '../../context/LanguageContext';
 import translations from '../../context/translations';
+import FloatingOrbs from '../ui/FloatingOrbs';
+import GuidedTour from '../ui/GuidedTour';
 
 const API     = 'http://127.0.0.1:5000/api';
 const AGENT   = 'http://localhost:8000';
@@ -390,6 +392,7 @@ const CommercialDashboard = ({ user, onLogout, onUpdateUser }) => {
 
   return (
     <AppLayout user={user} activePage={page} setActivePage={handleSetPage} onLogout={onLogout} navItems={NAV}>
+      <GuidedTour role={user?.role} />
       <div style={{ padding: 40 }}>
 
         {/* ── Overview Commercial ── */}
@@ -403,6 +406,32 @@ const CommercialDashboard = ({ user, onLogout, onUpdateUser }) => {
                 Performance <span style={{ color: GREEN }}>Commerciale</span>
               </h1>
               <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Ventes · Clients B2B · Prédictions RF · Agent IA</p>
+            </div>
+
+            {/* 🌿 Floating Orbs Hero Banner */}
+            <div style={{
+              borderRadius: 20, padding: '32px 40px', marginBottom: 32,
+              background: 'linear-gradient(135deg, #064e3b, #059669 60%, #10b981)',
+              position: 'relative', overflow: 'hidden', cursor: 'default',
+              minHeight: 130,
+            }}>
+              <FloatingOrbs color="#34d399" />
+              <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: 200, height: 200, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }} />
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2em', color: 'rgba(255,255,255,0.6)' }}>Performance Commerciale</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '2px 10px', borderRadius: 999, background: 'rgba(52,211,153,0.15)', border: '1px solid rgba(52,211,153,0.3)' }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#34d399', boxShadow: '0 0 6px #34d399', animation: 'pulse 2s infinite' }} />
+                    <span style={{ fontSize: 10, fontWeight: 700, color: '#34d399', letterSpacing: '0.1em' }}>LIVE</span>
+                  </div>
+                </div>
+                <h2 style={{ fontFamily: '"Playfair Display", serif', fontSize: 28, fontWeight: 900, color: '#fff', marginBottom: 4 }}>
+                  Performance <span style={{ color: '#a7f3d0' }}>Commerciale</span>
+                </h2>
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>
+                  Ventes · Clients B2B · Prédictions RF · Agent IA
+                </p>
+              </div>
             </div>
 
             {/* KPIs */}

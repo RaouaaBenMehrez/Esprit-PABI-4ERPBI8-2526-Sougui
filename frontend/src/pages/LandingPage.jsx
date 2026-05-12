@@ -5,6 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 import translations from '../context/translations';
 import logoUrl from '../assets/Logo.png';
 import emailjs from '@emailjs/browser';
+import InteractiveCanvas from '../components/ui/InteractiveCanvas';
 
 const EMAILJS_SERVICE_ID  = 'service_sougui';
 const EMAILJS_TEMPLATE_ID = 'template_sougui';
@@ -180,11 +181,12 @@ const LandingPage = ({ onNavigate }) => {
 
       {/* ── HERO ── */}
       <section id="hero" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', position: 'relative', overflow: 'hidden', paddingTop: 80 }}>
+        {/* 3D Interactive Canvas — nodes flee cursor */}
+        <InteractiveCanvas theme={theme} />
         <div style={{ position: 'absolute', top: '20%', left: '5%', width: 500, height: 500, background: 'radial-gradient(ellipse, rgba(30,90,255,0.15) 0%, transparent 70%)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', bottom: '10%', right: '5%', width: 400, height: 400, background: 'radial-gradient(ellipse, rgba(30,90,255,0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle, rgba(30,90,255,0.12) 1px, transparent 1px)', backgroundSize: '40px 40px', opacity: theme === 'dark' ? 0.3 : 0.15, pointerEvents: 'none' }} />
 
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px', width: '100%' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 40px', width: '100%', position: 'relative', zIndex: 1 }}>
           <div style={{ maxWidth: 760 }}>
             <div className="anim-fade-up" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: 9999, background: 'rgba(30,90,255,0.1)', border: '1px solid rgba(30,90,255,0.2)', marginBottom: 28 }}>
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--blue)', display: 'inline-block' }} />

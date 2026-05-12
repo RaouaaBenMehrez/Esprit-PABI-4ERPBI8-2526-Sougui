@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Sun, Moon, ArrowLeft, Eye, EyeOff, Camera, UserCheck, Lock, Mail, Globe } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -6,6 +6,7 @@ import translations from '../context/translations';
 import logoUrl from '../assets/Logo.png';
 import FaceLoginModal from '../components/auth/FaceLoginModal';
 import ForgotPassword from '../components/auth/ForgotPassword';
+import InteractiveCanvas from '../components/ui/InteractiveCanvas';
 
 const LoginPage = ({ onLogin, onBack }) => {
   const { theme, toggleTheme } = useTheme();
@@ -76,12 +77,14 @@ const LoginPage = ({ onLogin, onBack }) => {
         flex: 1, display: 'flex', flexDirection: 'column', padding: '40px',
         position: 'relative',
         background: 'linear-gradient(135deg, #05080f 0%, #0f1628 50%, #1e3a80 100%)',
+        overflow: 'hidden',
       }}>
-        <div style={{ position: 'absolute', inset: 0, opacity: 0.1, backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.3) 1px, transparent 1px)', backgroundSize: '30px 30px', pointerEvents: 'none' }} />
+        {/* Interactive nodes canvas */}
+        <InteractiveCanvas theme="dark" />
         <div style={{ position: 'absolute', bottom: '10%', left: '10%', width: 400, height: 400, background: 'radial-gradient(ellipse, rgba(30,90,255,0.25) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 2 }}>
           <img src={logoUrl} alt="Sougui" style={{ width: 40, height: 40, objectFit: 'contain' }} onError={e => { e.target.style.display = 'none'; }} />
           <div>
             <div style={{ fontFamily: '"Playfair Display", serif', fontWeight: 900, fontSize: 22, color: '#fff' }}>Sougui</div>
@@ -90,7 +93,7 @@ const LoginPage = ({ onLogin, onBack }) => {
         </div>
 
         {/* Center content */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', zIndex: 2 }}>
           <h2 style={{ fontFamily: '"Playfair Display", serif', fontSize: 48, fontWeight: 900, color: '#fff', lineHeight: 1.1, marginBottom: 20 }}>
             {t.login_left_title_1}<br />
             <span style={{ color: '#4d7fff' }}>Business</span><br />
@@ -121,7 +124,7 @@ const LoginPage = ({ onLogin, onBack }) => {
           </div>
         </div>
 
-        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, position: 'relative', zIndex: 1 }}>{t.login_left_copy}</p>
+        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, position: 'relative', zIndex: 2 }}>{t.login_left_copy}</p>
       </div>
 
       {/* ── Right Panel ── */}
