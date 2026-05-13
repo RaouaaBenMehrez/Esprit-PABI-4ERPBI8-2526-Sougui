@@ -5,9 +5,9 @@ import { ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, Pola
 const API = 'http://127.0.0.1:5000/api';
 
 const CLASSE_STYLE = {
-  'Strategique': { color:'#22c55e', bg:'rgba(34,197,94,0.1)',  label:'⭐ Stratégique', desc:'Fournisseur clé — relation prioritaire' },
+  'Stratégique': { color:'#22c55e', bg:'rgba(34,197,94,0.1)',  label:'⭐ Stratégique', desc:'Fournisseur clé — relation prioritaire' },
   'Standard':    { color:'#3b82f6', bg:'rgba(59,130,246,0.1)', label:'✅ Standard',     desc:'Fournisseur fiable — maintenir' },
-  'A Revoir':    { color:'#ef4444', bg:'rgba(239,68,68,0.1)',  label:'⚠️ À Revoir',    desc:'Performance insuffisante — audit requis' },
+  'À Revoir':    { color:'#ef4444', bg:'rgba(239,68,68,0.1)',  label:'⚠️ À Revoir',    desc:'Performance insuffisante — audit requis' },
 };
 
 export default function SupplierScoring() {
@@ -70,7 +70,7 @@ export default function SupplierScoring() {
               {data?.total || 0} Fournisseurs classifiés
             </h3>
             <div style={{ display:'flex', gap:8 }}>
-              {['all','Strategique','Standard','A Revoir'].map(k => (
+              {['all','Stratégique','Standard','À Revoir'].map(k => (
                 <button key={k} onClick={() => setFilter(k)}
                   style={{ padding:'4px 10px', borderRadius:6, border:'1px solid var(--border)',
                     background: filter===k ? 'var(--blue)' : 'transparent',

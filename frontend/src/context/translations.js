@@ -206,6 +206,21 @@ const translations = {
     nav_ceo_price: 'Price Simulator',
     nav_ceo_supplier: 'Supplier Scoring',
 
+    // Predictions Hub — noms des modèles ML (client-friendly)
+    pred_bestseller_label: 'Produits Phares',
+    pred_bestseller_desc:  'Identifier les produits à fort potentiel commercial',
+    pred_b2b_label:        'Prévision Commandes B2B',
+    pred_b2b_desc:         'Projeter le chiffre d\'affaires d\'un client entreprise',
+    pred_supplier_label:   'Classement Fournisseurs',
+    pred_supplier_desc:    'Évaluer et classer les fournisseurs par performance',
+    pred_delivery_label:   'Estimation Livraison',
+    pred_delivery_desc:    'Calculer la distance et le coût de livraison client',
+
+    pred_seasonal_label:   'Recommandation Saisonnière',
+    pred_seasonal_desc:    'Quels produits pousser selon la période de l\'année',
+    pred_revenue_label:    'Prévision Revenus',
+    pred_revenue_desc:     'Estimer le CA du mois prochain par canal de vente',
+
     // Dashboard nav — Marketing
     nav_mkt_section: 'Marketing',
     nav_mkt_overview: 'Vue Marketing',
@@ -272,6 +287,12 @@ const translations = {
     dash_running: 'Calcul en cours...',
     dash_segment: 'Segmenter ce client',
     dash_classify: 'Classifier ce client',
+
+    // Settings
+    set_profile: 'Profil',
+    set_security: 'Sécurité',
+    set_users: 'Utilisateurs',
+    set_roles: 'Rôles & Accès',
   },
 
   en: {
@@ -478,6 +499,21 @@ const translations = {
     nav_ceo_price: 'Price Simulator',
     nav_ceo_supplier: 'Supplier Scoring',
 
+    // Predictions Hub — ML model names (client-friendly)
+    pred_bestseller_label: 'Top Products',
+    pred_bestseller_desc:  'Identify high-potential commercial products',
+    pred_b2b_label:        'B2B Order Forecast',
+    pred_b2b_desc:         'Project revenue for a business client',
+    pred_supplier_label:   'Supplier Ranking',
+    pred_supplier_desc:    'Evaluate and rank suppliers by performance',
+    pred_delivery_label:   'Delivery Estimate',
+    pred_delivery_desc:    'Calculate delivery distance and cost per client',
+
+    pred_seasonal_label:   'Seasonal Recommendation',
+    pred_seasonal_desc:    'Which products to highlight based on the time of year',
+    pred_revenue_label:    'Revenue Forecast',
+    pred_revenue_desc:     'Estimate next month revenue by sales channel',
+
     // Dashboard nav — Marketing
     nav_mkt_section: 'Marketing',
     nav_mkt_overview: 'Marketing View',
@@ -544,6 +580,12 @@ const translations = {
     dash_running: 'Running...',
     dash_segment: 'Segment this client',
     dash_classify: 'Classify this client',
+
+    // Settings
+    set_profile: 'Profile',
+    set_security: 'Security',
+    set_users: 'Users',
+    set_roles: 'Roles & Access',
   },
 };
 

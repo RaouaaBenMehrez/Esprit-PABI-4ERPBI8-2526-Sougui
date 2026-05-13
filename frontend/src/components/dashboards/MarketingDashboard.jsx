@@ -6,8 +6,6 @@ import {
 import { Loader2, BrainCircuit } from 'lucide-react';
 import AppLayout from '../layout/AppLayout';
 import ProfileSettings from '../profile/ProfileSettings';
-import BestSellerB2C   from '../predictions/BestSellerB2C';
-import ChurnPrediction from '../predictions/ChurnPrediction';
 import PowerBIEmbed    from '../powerbi/PowerBIEmbed';
 import PredictionsPage from '../predictions/PredictionsPage';
 import { useLanguage } from '../../context/LanguageContext';
@@ -30,8 +28,6 @@ const buildNav = (t) => [
   ]},
   { title: t.nav_mkt_ml, items: [
     { id: 'mk-hub',        label: t.nav_mkt_hub,        icon: '🧠', badge: '6 ML' },
-    { id: 'mk-bestseller', label: t.nav_mkt_bestseller, icon: '🏆', badge: 'ML' },
-    { id: 'mk-churn',      label: t.nav_mkt_churn,      icon: '⚠️', badge: 'ML' },
     { id: 'mk-rfm',        label: t.nav_mkt_rfm,        icon: '🎯', badge: 'ML' },
     { id: 'mk-xgboost',    label: t.nav_mkt_xgboost,    icon: '🤖', badge: 'ML' },
   ]},
@@ -487,11 +483,7 @@ const MarketingDashboard = ({ user, onLogout, onUpdateUser }) => {
         )}
 
         {/* ── Hub toutes les prédictions ── */}
-        {page === 'mk-hub'        && <PredictionsPage />}
-
-        {/* ── Prédictions ML individuelles ── */}
-        {page === 'mk-bestseller' && <div style={{ padding:'40px' }}><BestSellerB2C /></div>}
-        {page === 'mk-churn'      && <div style={{ padding:'40px' }}><ChurnPrediction /></div>}
+        {page === 'mk-hub'        && <PredictionsPage role="marketing" />}
 
         {page === 'settings' && (
           <div style={{ padding: '40px' }}>

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Loader2 } from 'lucide-react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { TrendingUp, Loader2, BarChart2, Activity } from 'lucide-react';
 
 const API = 'http://127.0.0.1:5000/api';
 
@@ -47,7 +46,7 @@ export default function B2BDemandPrediction() {
     </div>
   );
 
-  const chartData = result?.predictions_3mois?.map(p => ({ name: MOIS_LABELS[p.mois-1], revenue: p.revenue_predit })) || [];
+  // Removed chart data
 
   return (
     <div className="anim-fade-up">
@@ -56,8 +55,8 @@ export default function B2BDemandPrediction() {
           <TrendingUp size={24} style={{ color:'#3b82f6' }} />
         </div>
         <div>
-          <h1 style={{ fontSize:28, fontWeight:900, color:'var(--text-primary)' }}>B2B Demand Prediction</h1>
-          <p style={{ fontSize:13, color:'var(--text-muted)' }}>Prévision demande clients B2B · XGBoost Regressor · {meta?.n_clients_b2b || 21} clients B2B</p>
+          <h1 style={{ fontSize:28, fontWeight:900, color:'var(--text-primary)' }}>Prévision Commandes Entreprises</h1>
+          <p style={{ fontSize:13, color:'var(--text-muted)' }}>Projection du chiffre d'affaires client · XGBoost Regressor · {meta?.n_clients_b2b || 21} clients entreprises</p>
         </div>
         <div style={{ marginLeft:'auto', padding:'4px 12px', borderRadius:999, background:'rgba(59,130,246,0.1)', border:'1px solid rgba(59,130,246,0.3)', fontSize:11, fontWeight:700, color:'#3b82f6' }}>● ML LIVE</div>
       </div>
@@ -101,47 +100,58 @@ export default function B2BDemandPrediction() {
           </button>
         </div>
 
-        {/* Résultats */}
+        {/* Résultats Premium */}
         <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
           {result ? (
-            <>
-              {/* Revenue prédit */}
-              <div className="s-card" style={{ padding:24, textAlign:'center', borderTop:'4px solid #3b82f6' }}>
-                <div style={{ fontSize:11, fontWeight:700, color:'#3b82f6', marginBottom:8, letterSpacing:1 }}>DEMANDE B2B ESTIMÉE</div>
-                <div style={{ fontSize:60, fontWeight:900, color:'var(--text-primary)', lineHeight:1 }}>
+            <div style={{ padding:32, borderRadius:24, background:'linear-gradient(145deg, rgba(59,130,246,0.05), var(--bg-card))', border:'1px solid rgba(59,130,246,0.2)' }}>
+              
+              <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:24 }}>
+                <div style={{ width:40, height:40, borderRadius:12, background:'#3b82f6', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <BarChart2 size={20} />
+                </div>
+                <div>
+                  <div style={{ fontSize:11, fontWeight:800, color:'#3b82f6', textTransform:'uppercase', letterSpacing:1 }}>Estimation du Mois Cible</div>
+                  <div style={{ fontSize:14, color:'var(--text-primary)', fontWeight:600 }}>Mois {form.mois}</div>
+                </div>
+              </div>
+
+              <div style={{ textAlign:'center', padding:'32px 0', borderTop:'1px dashed var(--border)', borderBottom:'1px dashed var(--border)', marginBottom:24 }}>
+                <div style={{ fontSize:13, color:'var(--text-muted)', marginBottom:8 }}>Chiffre d'Affaires Projeté</div>
+                <div style={{ fontSize:56, fontWeight:900, color:'var(--text-primary)', lineHeight:1, fontFamily:'"Playfair Display", serif' }}>
                   {result.revenue_predit?.toLocaleString('fr-FR', {maximumFractionDigits:0})}
+                  <span style={{ fontSize:20, color:'var(--text-muted)', marginLeft:8, fontFamily:'Inter, sans-serif' }}>DT</span>
                 </div>
-                <div style={{ fontSize:18, color:'var(--text-muted)' }}>DT</div>
+                
+                <div style={{ display:'inline-flex', alignItems:'center', gap:6, marginTop:16, padding:'6px 12px', borderRadius:999, background:'rgba(59,130,246,0.1)', color:'#3b82f6', fontSize:12, fontWeight:700 }}>
+                  <Activity size={14} /> ± 5% Marge d'erreur ML
+                </div>
               </div>
 
-              {/* Prévisions 3 mois */}
-              <div className="s-card" style={{ padding:20 }}>
-                <div style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', marginBottom:4 }}>PRÉVISION 3 MOIS</div>
-                <div style={{ fontSize:22, fontWeight:800, color:'#22c55e', marginBottom:12 }}>
-                  Total : {result.ca_3mois_total?.toLocaleString('fr-FR',{maximumFractionDigits:0})} DT
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:24 }}>
+                <div style={{ padding:16, borderRadius:12, background:'var(--bg-hover)' }}>
+                  <div style={{ fontSize:11, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:1 }}>CA Historique</div>
+                  <div style={{ fontSize:18, fontWeight:800, color:'var(--text-primary)' }}>{form.ca_cumul.toLocaleString()} DT</div>
                 </div>
-                <ResponsiveContainer width="100%" height={140}>
-                  <BarChart data={chartData} margin={{ top:0, right:0, bottom:0, left:-20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                    <XAxis dataKey="name" tick={{ fill:'#94a3b8', fontSize:11 }} />
-                    <YAxis tick={{ fill:'#94a3b8', fontSize:11 }} />
-                    <Tooltip formatter={v => `${v.toLocaleString('fr-FR',{maximumFractionDigits:0})} DT`} />
-                    <Bar dataKey="revenue" fill="#3b82f6" radius={[6,6,0,0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <div style={{ padding:16, borderRadius:12, background:'var(--bg-hover)' }}>
+                  <div style={{ fontSize:11, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:1 }}>Saisonnalité</div>
+                  <div style={{ fontSize:18, fontWeight:800, color:'var(--text-primary)' }}>{form.saison} {form.is_ramadan ? '(Ramadan)' : ''}</div>
+                </div>
               </div>
 
-              {/* Interprétation */}
-              <div className="s-card" style={{ padding:20, borderLeft:'4px solid #3b82f6' }}>
-                <p style={{ fontSize:13, color:'var(--text-primary)', lineHeight:1.6, marginBottom:8 }}>{result.interpretation}</p>
-                <p style={{ fontSize:12, color:'var(--text-muted)' }}>💡 {result.recommandation}</p>
+              <div style={{ padding:20, borderRadius:16, background:'rgba(59,130,246,0.08)', borderLeft:'4px solid #3b82f6' }}>
+                <p style={{ fontSize:14, color:'var(--text-primary)', lineHeight:1.6, margin:0, fontWeight:600 }}>{result.interpretation}</p>
+                <div style={{ height:1, background:'rgba(59,130,246,0.15)', margin:'12px 0' }} />
+                <p style={{ fontSize:13, color:'var(--text-muted)', margin:0 }}>💡 {result.recommandation}</p>
               </div>
-            </>
+
+            </div>
           ) : (
-            <div className="s-card" style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:40, color:'var(--text-muted)', textAlign:'center' }}>
-              <TrendingUp size={48} style={{ opacity:0.2, marginBottom:16 }} />
-              <p style={{ fontWeight:700, fontSize:15, marginBottom:4 }}>Prédiction B2B Demand</p>
-              <p style={{ fontSize:13 }}>Configurez le profil client et prédisez la demande sur 3 mois.</p>
+            <div style={{ height:'100%', borderRadius:24, border:'2px dashed var(--border)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:40, color:'var(--text-muted)', textAlign:'center', background:'var(--bg-card)' }}>
+              <div style={{ width:80, height:80, borderRadius:'50%', background:'var(--bg-hover)', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:24 }}>
+                <TrendingUp size={40} style={{ color:'var(--border)' }} />
+              </div>
+              <h3 style={{ fontSize:20, fontWeight:800, color:'var(--text-primary)', marginBottom:8, fontFamily:'"Playfair Display", serif' }}>En attente de configuration</h3>
+              <p style={{ fontSize:14, maxWidth:250, margin:'0 auto' }}>Définissez le profil du client B2B pour générer la projection financière.</p>
             </div>
           )}
         </div>

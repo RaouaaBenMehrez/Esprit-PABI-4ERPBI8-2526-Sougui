@@ -7,8 +7,6 @@ import { Send, Bot, User, Loader2, BrainCircuit, Search } from 'lucide-react';
 import AppLayout from '../layout/AppLayout';
 import ProfileSettings from '../profile/ProfileSettings';
 import DeliveryAnalysis   from '../predictions/DeliveryAnalysis';
-import B2BDemandPrediction from '../predictions/B2BDemandPrediction';
-import PriceSimulator      from '../predictions/PriceSimulator';
 import PowerBIEmbed        from '../powerbi/PowerBIEmbed';
 import { useLanguage } from '../../context/LanguageContext';
 import translations from '../../context/translations';
@@ -32,8 +30,6 @@ const buildNav = (t) => [
   ]},
   { title: t.nav_com_ml, items: [
     { id: 'cm-delivery',   label: t.nav_com_delivery,   icon: '🗺️', badge: 'ML' },
-    { id: 'cm-b2b',        label: t.nav_com_b2b,        icon: '📈', badge: 'ML' },
-    { id: 'cm-price',      label: t.nav_com_price,      icon: '💲', badge: 'ML' },
     { id: 'cm-regression', label: t.nav_com_regression, icon: '📈', badge: 'ML' },
     { id: 'cm-agent',      label: t.nav_com_agent,      icon: '🤖', badge: 'Live' },
   ]},
@@ -649,8 +645,6 @@ const CommercialDashboard = ({ user, onLogout, onUpdateUser }) => {
 
         {/* ── Prédictions ML ── */}
         {page === 'cm-delivery' && <div style={{ padding:'40px' }}><DeliveryAnalysis /></div>}
-        {page === 'cm-b2b'     && <div style={{ padding:'40px' }}><B2BDemandPrediction /></div>}
-        {page === 'cm-price'   && <div style={{ padding:'40px' }}><PriceSimulator /></div>}
 
         {page === 'settings' && (
           <div style={{ padding: '40px' }}>

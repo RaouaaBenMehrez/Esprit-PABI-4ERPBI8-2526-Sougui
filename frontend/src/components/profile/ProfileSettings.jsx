@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { User, Lock, Users, Shield, BarChart2, Mail, Eye, EyeOff, Trash2, Plus, Save, TestTube, Camera, Compass } from 'lucide-react';
 import FaceLoginModal from '../auth/FaceLoginModal';
+import { useLanguage } from '../../context/LanguageContext';
+import translations from '../../context/translations';
 
 const API = 'http://127.0.0.1:5000/api';
 
@@ -425,111 +427,22 @@ const TabPermissions = ({ user }) => {
 
 
 
-// ── Onglet Dashboards BI (CEO) ────────────────────────────────────────────────
-const TabDashboards = () => {
-  const PBI_DEFAULT = 'https://app.powerbi.com/reportEmbed?reportId=fa5fa437-6265-43ec-a047-a6802e6f49c4&autoAuth=true&ctid=604f1a96-cbe8-43f8-abbf-f8eaf5d85730';
-  const [urls, setUrls]  = useState({ pbi_ceo: PBI_DEFAULT, pbi_marketing: '', pbi_commercial: '' });
-  const [msg, setMsg]    = useState('');
-
-  useEffect(() => {
-    fetch(`${API}/settings`).then(r => r.json()).then(cfg => {
-      setUrls(prev => ({ ...prev, ...{ pbi_ceo: cfg.pbi_ceo || prev.pbi_ceo, pbi_marketing: cfg.pbi_marketing || prev.pbi_marketing, pbi_commercial: cfg.pbi_commercial || prev.pbi_commercial } }));
-    }).catch(() => {});
-  }, []);
-
-  const save = async () => {
-    const res = await fetch(`${API}/settings`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(urls) });
-    const data = await res.json();
-    setMsg(data.success ? '✓ URLs Power BI sauvegardées' : '✗ Erreur');
-    setTimeout(() => setMsg(''), 3000);
-  };
-
-  return (
-    <Section title="📊 URLs Power BI par rôle">
-      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 20, lineHeight: 1.6 }}>Modifiez les URLs d'intégration Power BI pour chaque rôle. Copiez l'URL depuis Power BI → Fichier → Publier → Intégrer.</p>
-      {[['pbi_ceo', '👑 CEO'], ['pbi_marketing', '📊 Marketing'], ['pbi_commercial', '💼 Commercial']].map(([key, label]) => (
-        <div key={key} style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 6 }}>{label}</label>
-          <input className="s-input" value={urls[key]} onChange={e => setUrls(prev => ({ ...prev, [key]: e.target.value }))} placeholder="https://app.powerbi.com/reportEmbed?..." style={{ fontFamily: 'monospace', fontSize: 11 }} />
-        </div>
-      ))}
-      {msg && <p style={{ fontSize: 12, color: msg.startsWith('✓') ? '#22c55e' : '#ef4444', marginBottom: 12 }}>{msg}</p>}
-      <Btn onClick={save}><Save size={14} style={{ marginRight: 6 }} />Sauvegarder les URLs</Btn>
-    </Section>
-  );
-};
-
-// ── Onglet Email (CEO) ────────────────────────────────────────────────────────
-const TabEmail = ({ user }) => {
-  const [cfg, setCfg]     = useState({ gmail_sender: '', gmail_password: '' });
-  const [testTo, setTestTo] = useState('');
-  const [msg, setMsg]     = useState('');
-  const [testing, setTesting] = useState(false);
-
-  useEffect(() => {
-    fetch(`${API}/settings`).then(r => r.json()).then(s => {
-      setCfg({ gmail_sender: s.gmail_sender || '', gmail_password: s.gmail_password || '' });
-    }).catch(() => {});
-  }, []);
-
-  const save = async () => {
-    const res = await fetch(`${API}/settings`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) });
-    const data = await res.json();
-    setMsg(data.success ? '✓ Config Gmail sauvegardée' : '✗ Erreur');
-    setTimeout(() => setMsg(''), 3000);
-  };
-
-  const sendTest = async () => {
-    setTesting(true);
-    const res = await fetch(`${API}/settings/test-email`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to: testTo }) });
-    const data = await res.json();
-    setMsg(data.success ? '✓ Email test envoyé !' : `✗ ${data.message}`);
-    setTesting(false);
-    setTimeout(() => setMsg(''), 5000);
-  };
-
-  return (
-    <Section title="📧 Configuration Gmail SMTP">
-      <div style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(30,90,255,0.06)', border: '1px solid rgba(30,90,255,0.15)', fontSize: 12, color: 'var(--text-muted)', marginBottom: 20, lineHeight: 1.7 }}>
-        <strong style={{ color: 'var(--blue)' }}>Comment obtenir un App Password Gmail :</strong><br />
-        1. Allez sur <a href="https://myaccount.google.com/security" target="_blank" rel="noreferrer" style={{ color: 'var(--blue)' }}>myaccount.google.com/security</a><br />
-        2. Activez la validation en 2 étapes<br />
-        3. Cherchez «Mots de passe d'application» → créez-en un<br />
-        4. Copiez le mot de passe à 16 caractères ci-dessous
-      </div>
-      <Input label="Email Gmail expéditeur" type="email" value={cfg.gmail_sender} onChange={e => setCfg(c => ({ ...c, gmail_sender: e.target.value }))} placeholder="sougui.notifications@gmail.com" />
-      <Input label="App Password Gmail (16 caractères)" type="password" value={cfg.gmail_password} onChange={e => setCfg(c => ({ ...c, gmail_password: e.target.value }))} placeholder="xxxx xxxx xxxx xxxx" />
-      {msg && <div style={{ padding: '10px 14px', borderRadius: 10, background: msg.startsWith('✓') ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)', color: msg.startsWith('✓') ? '#22c55e' : '#ef4444', fontSize: 12, marginBottom: 12 }}>{msg}</div>}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <Btn onClick={save}><Save size={14} style={{ marginRight: 6 }} />Sauvegarder</Btn>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flex: 1 }}>
-          <div style={{ flex: 1 }}>
-            <Input label="Email de test" type="email" value={testTo} onChange={e => setTestTo(e.target.value)} placeholder="destinataire@gmail.com" />
-          </div>
-          <Btn onClick={sendTest} disabled={testing || !testTo} variant="ghost" style={{ marginBottom: 16 }}>
-            <TestTube size={14} style={{ marginRight: 6 }} />{testing ? 'Envoi...' : 'Tester'}
-          </Btn>
-        </div>
-      </div>
-    </Section>
-  );
-};
-
-
-const TABS_ADMIN = [
-  { id: 'profile',     label: 'Profil',          icon: User },
-  { id: 'security',   label: 'Sécurité',         icon: Lock },
-  { id: 'users',      label: 'Utilisateurs',     icon: Users },
-  { id: 'permissions',label: 'Rôles & Accès',    icon: Shield },
-  { id: 'dashboards', label: 'Dashboards BI',    icon: BarChart2 },
-  { id: 'email',      label: 'Email SMTP',       icon: Mail },
-];
-const TABS_OTHER = [
-  { id: 'profile',  label: 'Profil',   icon: User },
-  { id: 'security', label: 'Sécurité', icon: Lock },
-];
 
 const ProfileSettings = ({ user, onUpdateUser }) => {
+  const { lang } = useLanguage();
+  const t = translations[lang];
+
+  const TABS_ADMIN = [
+    { id: 'profile',     label: t.set_profile,          icon: User },
+    { id: 'security',   label: t.set_security,         icon: Lock },
+    { id: 'users',      label: t.set_users,     icon: Users },
+    { id: 'permissions',label: t.set_roles,    icon: Shield },
+  ];
+  const TABS_OTHER = [
+    { id: 'profile',  label: t.set_profile,   icon: User },
+    { id: 'security', label: t.set_security, icon: Lock },
+  ];
+
   const isAdmin = ['ceo','admin'].includes(user?.role);
   const tabs    = isAdmin ? TABS_ADMIN : TABS_OTHER;
   const [tab, setTab] = useState('profile');
@@ -610,8 +523,6 @@ const ProfileSettings = ({ user, onUpdateUser }) => {
           {tab === 'security'     && <TabSecurity    user={user} />}
           {tab === 'users'        && isAdmin && <TabUsers      user={user} />}
           {tab === 'permissions'  && isAdmin && <TabPermissions user={user} />}
-          {tab === 'dashboards'   && isAdmin && <TabDashboards />}
-          {tab === 'email'        && isAdmin && <TabEmail user={user} />}
         </div>
       </div>
     </div>

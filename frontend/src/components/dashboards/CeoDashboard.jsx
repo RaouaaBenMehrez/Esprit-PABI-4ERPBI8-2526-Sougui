@@ -7,9 +7,6 @@ import {
 import { TrendingUp, Users, ShoppingBag, Percent, BrainCircuit, Loader2, ChevronUp, ChevronDown, Search, BarChart2, Package, Database, RefreshCw, FileCode } from 'lucide-react';
 import AppLayout from '../layout/AppLayout';
 import ProfileSettings from '../profile/ProfileSettings';
-import B2BDemandPrediction from '../predictions/B2BDemandPrediction';
-import PriceSimulator     from '../predictions/PriceSimulator';
-import SupplierScoring    from '../predictions/SupplierScoring';
 import PowerBIEmbed      from '../powerbi/PowerBIEmbed';
 import PredictionsPage   from '../predictions/PredictionsPage';
 import { useLanguage } from '../../context/LanguageContext';
@@ -34,9 +31,6 @@ const buildNav = (t) => [
   ]},
   { title: t.nav_ceo_ml, items: [
     { id: 'predictions-hub',  label: t.nav_ceo_hub,      icon: '🧠', badge: '6 ML' },
-    { id: 'b2b-demand',       label: t.nav_ceo_b2b,      icon: '📈', badge: 'ML' },
-    { id: 'price-simulator',  label: t.nav_ceo_price,    icon: '💲', badge: 'ML' },
-    { id: 'supplier-scoring', label: t.nav_ceo_supplier,  icon: '🏭', badge: 'ML' },
   ]},
 ];
 
@@ -724,12 +718,9 @@ const CeoDashboard = ({ user, onLogout, onUpdateUser }) => {
         {page === 'logistique' && <LogistiquePage API={API} />}
 
         {/* ── Hub toutes les prédictions (6 modèles) ── */}
-        {page === 'predictions-hub' && <PredictionsPage />}
+        {page === 'predictions-hub' && <PredictionsPage role="ceo" />}
 
-        {/* ── Prédictions ML individuelles ── */}
-        {page === 'b2b-demand'       && <div style={{ padding:'40px' }}><B2BDemandPrediction /></div>}
-        {page === 'price-simulator'  && <div style={{ padding:'40px' }}><PriceSimulator /></div>}
-        {page === 'supplier-scoring' && <div style={{ padding:'40px' }}><SupplierScoring /></div>}
+        {/* ── Prédictions ML individuelles supprimées (maintenant dans le Hub) ── */}
 
         {/* ── Profile Settings ── */}
         {page === 'settings' && (
@@ -745,10 +736,10 @@ const CeoDashboard = ({ user, onLogout, onUpdateUser }) => {
 
 /* ══ BCG Matrix Page ════════════════════════════════════════════════════════ */
 const BCG_COLORS = {
-  'Stars':          { bg: 'rgba(234,179,8,0.12)',  border: 'rgba(234,179,8,0.4)',  text: '#eab308', icon: '⭐' },
-  'Cash Cows':      { bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.4)', text: '#22c55e', icon: '🐄' },
-  'Question Marks': { bg: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.4)',text: '#3b82f6', icon: '❓' },
-  'Dogs':           { bg: 'rgba(239,68,68,0.12)',  border: 'rgba(239,68,68,0.4)', text: '#ef4444', icon: '🐕' },
+  'Stars':          { label: 'Stars',          bg: 'rgba(234,179,8,0.12)',  border: 'rgba(234,179,8,0.4)',  text: '#eab308', icon: '⭐' },
+  'Cash Cows':      { label: 'Cash Cows',      bg: 'rgba(34,197,94,0.12)',  border: 'rgba(34,197,94,0.4)', text: '#22c55e', icon: '💰' },
+  'Question Marks': { label: 'Question Marks', bg: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.4)',text: '#3b82f6', icon: '❓' },
+  'Dogs':           { label: 'Low Performers', bg: 'rgba(239,68,68,0.12)',  border: 'rgba(239,68,68,0.4)', text: '#ef4444', icon: '📉' },
 };
 
 const BcgPage = ({ API }) => {
@@ -802,7 +793,7 @@ const BcgPage = ({ API }) => {
                 boxShadow: filter===q ? `0 0 20px ${s.border}` : 'none'
               }}>
               <div style={{ fontSize:28, marginBottom:8 }}>{s.icon}</div>
-              <div style={{ fontSize:18, fontWeight:800, color:s.text }}>{q}</div>
+              <div style={{ fontSize:18, fontWeight:800, color:s.text }}>{s.label || q}</div>
               <div style={{ fontSize:22, fontWeight:700, color:'var(--text-primary)', marginTop:4 }}>{count}</div>
               <div style={{ fontSize:11, color:'var(--text-muted)' }}>produits · {(ca/1000).toFixed(1)} K DT</div>
             </div>
@@ -814,7 +805,7 @@ const BcgPage = ({ API }) => {
       <div className="s-card" style={{ padding:0, overflow:'hidden' }}>
         <div style={{ padding:'16px 24px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <h3 style={{ fontWeight:700, fontSize:14, color:'var(--text-primary)' }}>
-            Produits — {filter === 'all' ? 'Tous les quadrants' : filter}
+            Produits — {filter === 'all' ? 'Tous les quadrants' : (BCG_COLORS[filter]?.label || filter)}
           </h3>
           {filter !== 'all' && (
             <button onClick={() => setFilter('all')} style={{ fontSize:11, color:'var(--blue)', background:'none', border:'none', cursor:'pointer' }}>
@@ -856,7 +847,7 @@ const BcgPage = ({ API }) => {
                   </td>
                   <td style={{ padding:'10px 16px' }}>
                     <span style={{ padding:'3px 10px', borderRadius:999, background:s.bg, border:`1px solid ${s.border}`, fontSize:11, fontWeight:700, color:s.text }}>
-                      {s.icon} {p.quadrant}
+                      {s.icon} {s.label || p.quadrant}
                     </span>
                   </td>
                 </tr>

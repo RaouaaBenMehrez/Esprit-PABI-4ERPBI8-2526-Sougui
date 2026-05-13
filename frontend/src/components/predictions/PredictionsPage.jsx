@@ -8,12 +8,13 @@ import {
   AlertTriangle, Factory, BarChart2, CheckCircle,
   AlertCircle, Loader2, Cpu
 } from 'lucide-react';
-import BestSellerB2C       from './BestSellerB2C';
-import B2BDemandPrediction from './B2BDemandPrediction';
-import ChurnPrediction     from './ChurnPrediction';
-import SupplierScoring     from './SupplierScoring';
-import DeliveryAnalysis    from './DeliveryAnalysis';
-import PriceSimulator      from './PriceSimulator';
+import BestSellerB2C         from './BestSellerB2C';
+import B2BDemandPrediction   from './B2BDemandPrediction';
+import SupplierScoring       from './SupplierScoring';
+import SeasonalRecommend     from './SeasonalRecommend';
+import RevenueForecaster     from './RevenueForecaster';
+import { useLanguage }       from '../../context/LanguageContext';
+import translations          from '../../context/translations';
 
 const API = 'http://127.0.0.1:5000/api';
 
@@ -72,68 +73,50 @@ const ModelsHealth = () => {
   );
 };
 
-/* ── Configuration des onglets (render functions — pas d'instanciation module-level) */
-const TABS = [
-  {
-    id: 'best-seller',
-    label: 'Best Seller B2C',
-    icon: ShoppingBag,
-    color: '#a855f7',
-    badge: 'RandomForest',
-    desc: 'Prédire si un produit deviendra best-seller',
-    render: () => <BestSellerB2C />,
-  },
-  {
-    id: 'b2b-demand',
-    label: 'B2B Demand',
-    icon: TrendingUp,
-    color: '#3b82f6',
-    badge: 'XGBoost',
-    desc: 'Prévision demande clients B2B sur 3 mois',
-    render: () => <B2BDemandPrediction />,
-  },
-  {
-    id: 'churn',
-    label: 'Churn Risk',
-    icon: AlertTriangle,
-    color: '#ef4444',
-    badge: 'GradientBoosting',
-    desc: 'Risque de départ client avec analyse RFM',
-    render: () => <ChurnPrediction />,
-  },
-  {
-    id: 'supplier',
-    label: 'Supplier Scoring',
-    icon: Factory,
-    color: '#22c55e',
-    badge: 'KMeans',
-    desc: 'Classification et scoring fournisseurs',
-    render: () => <SupplierScoring />,
-  },
-  {
-    id: 'delivery',
-    label: 'Delivery Analysis',
-    icon: MapPin,
-    color: '#3b82f6',
-    badge: 'Haversine',
-    desc: 'Distance & coût livraison depuis entrepôt',
-    render: () => <DeliveryAnalysis />,
-  },
-  {
-    id: 'price',
-    label: 'Price Simulator',
-    icon: BarChart2,
-    color: '#f59e0b',
-    badge: 'Ridge',
-    desc: "Simuler l'impact d'un changement de prix",
-    render: () => <PriceSimulator />,
-  },
-];
+/* ── Configuration des onglets selon le rôle utilisateur */
+const buildTabs = (t, role = 'ceo') => {
+  const ALL = [
+    {
+      id: 'best-seller', roles: ['ceo','marketing','commercial'],
+      label: t.pred_bestseller_label, icon: ShoppingBag, color: '#a855f7',
+      badge: 'RandomForest', desc: t.pred_bestseller_desc,
+      render: () => <BestSellerB2C />,
+    },
+    {
+      id: 'b2b-demand', roles: ['ceo','commercial'],
+      label: t.pred_b2b_label, icon: TrendingUp, color: '#3b82f6',
+      badge: 'XGBoost', desc: t.pred_b2b_desc,
+      render: () => <B2BDemandPrediction />,
+    },
+    {
+      id: 'supplier', roles: ['ceo'],
+      label: t.pred_supplier_label, icon: Factory, color: '#22c55e',
+      badge: 'KMeans', desc: t.pred_supplier_desc,
+      render: () => <SupplierScoring />,
+    },
+    {
+      id: 'seasonal', roles: ['marketing'],
+      label: t.pred_seasonal_label, icon: BarChart2, color: '#f59e0b',
+      badge: 'IA Saisonnière', desc: t.pred_seasonal_desc,
+      render: () => <SeasonalRecommend />,
+    },
+    {
+      id: 'revenue-forecast', roles: ['ceo','commercial'],
+      label: t.pred_revenue_label, icon: TrendingUp, color: '#10b981',
+      badge: 'Prophet', desc: t.pred_revenue_desc,
+      render: () => <RevenueForecaster />,
+    },
+  ];
+  return ALL.filter(tab => tab.roles.includes(role));
+};
 
-/* ══ PAGE PRINCIPALE ═════════════════════════════════════════════════ */
-const PredictionsPage = () => {
-  const [active, setActive] = useState('best-seller');
-  const tab = TABS.find(t => t.id === active);
+/* ══ PAGE PRINCIPALE ════════════════════════════════════════════════════ */
+const PredictionsPage = ({ role = 'ceo' }) => {
+  const { lang } = useLanguage();
+  const t = translations[lang];
+  const TABS = buildTabs(t, role);
+  const [active, setActive] = useState(TABS[0]?.id || 'best-seller');
+  const tab = TABS.find(tb => tb.id === active);
 
   return (
     <div className="anim-fade-up" style={{ padding: '40px' }}>
@@ -149,7 +132,7 @@ const PredictionsPage = () => {
               Predictive Intelligence <span style={{ color:'var(--blue)' }}>Suite</span>
             </h1>
             <p style={{ fontSize:13, color:'var(--text-muted)', marginTop:4 }}>
-              6 modèles ML · RandomForest · XGBoost · KMeans · GradientBoosting · Ridge · Haversine
+              4 modèles ML · RandomForest · XGBoost · KMeans · Haversine
             </p>
           </div>
           <div style={{ marginLeft:'auto', padding:'5px 14px', borderRadius:999, background:'rgba(30,90,255,0.1)', border:'1px solid rgba(30,90,255,0.25)', fontSize:12, fontWeight:700, color:'var(--blue)', display:'flex', alignItems:'center', gap:6 }}>
@@ -162,7 +145,7 @@ const PredictionsPage = () => {
       </div>
 
       {/* Onglets de navigation */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:10, marginBottom:28 }}>
+      <div style={{ display:'grid', gridTemplateColumns:`repeat(${TABS.length},1fr)`, gap:10, marginBottom:28 }}>
         {TABS.map(t => {
           const Icon = t.icon;
           const isActive = active === t.id;

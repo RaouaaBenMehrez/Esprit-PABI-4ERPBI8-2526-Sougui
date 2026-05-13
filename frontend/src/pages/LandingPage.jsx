@@ -6,6 +6,7 @@ import translations from '../context/translations';
 import logoUrl from '../assets/Logo.png';
 import emailjs from '@emailjs/browser';
 import InteractiveCanvas from '../components/ui/InteractiveCanvas';
+import { QRCodeSVG } from 'qrcode.react';
 
 const EMAILJS_SERVICE_ID  = 'service_sougui';
 const EMAILJS_TEMPLATE_ID = 'template_sougui';
@@ -374,6 +375,19 @@ const LandingPage = ({ onNavigate }) => {
             <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>Sougui.tn</span>
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>— Smart Business Suite</span>
           </div>
+          
+          {/* QR Code */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            <div style={{ padding: '8px', background: '#fff', borderRadius: '8px' }}>
+              <QRCodeSVG 
+                value={import.meta.env.VITE_API_URL?.includes('render') ? "https://sougui-bi.vercel.app" : window.location.href} 
+                size={70} 
+                level="L" 
+              />
+            </div>
+            <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Scanner l'application</span>
+          </div>
+
           <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t.footer_copy}</div>
           <button onClick={() => onNavigate('login')} className="btn-primary" style={{ fontSize: 13, padding: '9px 20px' }}>{t.footer_cta}</button>
         </div>
