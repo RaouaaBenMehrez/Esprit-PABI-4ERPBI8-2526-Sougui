@@ -12,6 +12,7 @@ const ROLE_CONFIG = {
   commercial: { label: 'Commercial', color: '#059669', bg: 'rgba(5,150,105,0.1)',  icon: '💼' },
 };
 
+/* ── Main AppLayout ───────────────────────────────────────────── */
 const AppLayout = ({ user, activePage, setActivePage, onLogout, navItems, children }) => {
   const { theme, toggleTheme } = useTheme();
   const { lang, toggleLang }   = useLanguage();
@@ -21,7 +22,8 @@ const AppLayout = ({ user, activePage, setActivePage, onLogout, navItems, childr
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-page)' }}>
 
       {/* ── SIDEBAR ── */}
-      <aside className="sidebar">
+      <aside className="sidebar" style={{ display: 'flex', flexDirection: 'column', height: '100vh', position: 'fixed', width: 256, borderRight: '1px solid var(--border)', background: 'var(--bg-card)', zIndex: 100 }}>
+        
         {/* Logo */}
         <div data-tour="logo" style={{ padding: '28px 20px 20px', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
@@ -34,9 +36,7 @@ const AppLayout = ({ user, activePage, setActivePage, onLogout, navItems, childr
           </div>
 
           {/* User Badge */}
-          <div
-            data-tour="user-badge"
-            onClick={() => setActivePage('settings')}
+          <div data-tour="user-badge" onClick={() => setActivePage('settings')}
             style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: roleConf.bg, border: `1px solid ${roleConf.color}33`, cursor: 'pointer', transition: 'opacity 0.2s' }}
             onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
             onMouseLeave={e => e.currentTarget.style.opacity = '1'}
@@ -67,7 +67,7 @@ const AppLayout = ({ user, activePage, setActivePage, onLogout, navItems, childr
                   <span style={{ fontSize: 16, lineHeight: 1 }}>{item.icon}</span>
                   <span style={{ fontSize: 13 }}>{item.label}</span>
                   {item.badge && (
-                    <span style={{ marginLeft: 'auto', fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 9999, background: item.badge === 'BI' ? 'rgba(249,115,22,0.15)' : 'rgba(30,90,255,0.15)', color: item.badge === 'BI' ? 'var(--orange)' : 'var(--blue)' }}>
+                    <span style={{ marginLeft: 'auto', fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 9999, background: item.badge === 'BI' || item.badge === 'PBI' ? 'rgba(249,115,22,0.15)' : 'rgba(30,90,255,0.15)', color: item.badge === 'BI' || item.badge === 'PBI' ? 'var(--orange)' : 'var(--blue)' }}>
                       {item.badge}
                     </span>
                   )}
@@ -85,20 +85,38 @@ const AppLayout = ({ user, activePage, setActivePage, onLogout, navItems, childr
             <span style={{ fontSize: 11, fontWeight: 600, color: '#22c55e' }}>PostgreSQL · Live</span>
           </div>
 
+          {/* Settings */}
           <button
             data-tour="settings-btn"
             onClick={() => setActivePage('settings')}
             className={`sidebar-item ${activePage === 'settings' ? 'active' : ''}`}
-            style={{ borderRadius: 10, padding: '8px 12px' }}>
+            style={{ borderRadius: 10, padding: '8px 12px' }}
+          >
             <Settings size={15} />
             <span style={{ fontSize: 13 }}>{lang === 'fr' ? 'Paramètres' : 'Settings'}</span>
           </button>
 
-          {/* Logout only at bottom */}
-          <button data-tour="logout-btn" onClick={onLogout} className="btn-ghost"
-            style={{ width: '100%', justifyContent: 'center', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 10, padding: '8px', color: '#ef4444', gap: 8 }}>
+          {/* Sign out */}
+          <button
+            data-tour="logout-btn"
+            onClick={onLogout}
+            className="btn-ghost"
+            style={{
+              width: '100%',
+              justifyContent: 'center',
+              border: '1px solid rgba(239,68,68,0.25)',
+              borderRadius: 10,
+              padding: '8px',
+              color: '#ef4444',
+              gap: 8,
+              fontSize: 13,
+              fontWeight: 600,
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.06)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
             <LogOut size={15} />
-            <span style={{ fontSize: 12, fontWeight: 600 }}>{lang === 'fr' ? 'Déconnexion' : 'Sign out'}</span>
+            <span>{lang === 'fr' ? 'Déconnexion' : 'Sign out'}</span>
           </button>
         </div>
       </aside>
@@ -106,7 +124,7 @@ const AppLayout = ({ user, activePage, setActivePage, onLogout, navItems, childr
       {/* ── MAIN AREA ── */}
       <div style={{ flex: 1, marginLeft: 256, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
 
-        {/* ── TOP BAR ── notifications + langue + thème bien visibles ── */}
+        {/* ── TOP BAR ── */}
         <header style={{
           position: 'sticky', top: 0, zIndex: 200,
           height: 60,
@@ -152,7 +170,7 @@ const AppLayout = ({ user, activePage, setActivePage, onLogout, navItems, childr
               {lang === 'fr' ? 'EN' : 'FR'}
             </button>
 
-            {/* Dark / Light mode — bien visible avec label */}
+            {/* Dark / Light mode */}
             <button
               onClick={toggleTheme}
               title={theme === 'dark' ? (lang === 'fr' ? 'Mode clair' : 'Light mode') : (lang === 'fr' ? 'Mode sombre' : 'Dark mode')}
@@ -176,6 +194,26 @@ const AppLayout = ({ user, activePage, setActivePage, onLogout, navItems, childr
 
             {/* Notification bell */}
             <NotificationBell user={user} topBar />
+
+            {/* LogOut in top bar */}
+            <button data-tour="logout-btn" onClick={onLogout} 
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '6px 12px', borderRadius: 8,
+                border: '1px solid rgba(239,68,68,0.2)',
+                background: 'var(--bg-card)', cursor: 'pointer',
+                fontSize: 11, fontWeight: 700,
+                color: '#ef4444',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-card)'}
+              title={lang === 'fr' ? 'Déconnexion' : 'Sign out'}
+            >
+              <LogOut size={14} />
+              <span>{lang === 'fr' ? 'Sortir' : 'Logout'}</span>
+            </button>
+
           </div>
         </header>
 

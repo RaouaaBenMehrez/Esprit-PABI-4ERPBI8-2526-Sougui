@@ -20,13 +20,14 @@ export default function RevenueForecaster() {
   const runForecast = async () => {
     setLoading(true); setError(null);
     try {
-      const r = await fetch(`${API}/predict/prophet-forecast`);
+      const r = await fetch(`${API}/predict/ca`);
       const d = await r.json();
-      // Pick the data point closest to horizon months ahead
-      const target = d.forecast?.slice(horizon - 1, horizon)[0];
-      setForecast({ ...d, target });
+      // /predict/ca returns { predictions: [{mois, prediction, min, max}] }
+      const preds = d.predictions || [];
+      const target = preds[Math.min(horizon - 1, preds.length - 1)];
+      setForecast({ predictions: preds, target });
     } catch {
-      setError('Impossible de contacter le modèle Prophet. Vérifiez que le backend est actif.');
+      setError('Impossible de contacter le modèle de prévision. Vérifiez que le backend est actif sur le port 5000.');
     }
     setLoading(false);
   };
@@ -34,12 +35,13 @@ export default function RevenueForecaster() {
   // Canal multipliers (simulated weighting)
   const CANAL_WEIGHT = { 'Tous les canaux': 1, 'E-commerce': 0.35, 'Vente directe': 0.42, 'Grossiste B2B': 0.23 };
   const weight = CANAL_WEIGHT[canal] || 1;
-  const rawValue  = forecast?.target?.yhat ?? null;
+  const rawValue  = forecast?.target?.prediction ?? null;
   const displayCA = rawValue !== null ? (rawValue * weight) : null;
-  const lowerCA   = rawValue !== null ? (forecast.target.yhat_lower * weight) : null;
-  const upperCA   = rawValue !== null ? (forecast.target.yhat_upper * weight) : null;
-  const trend     = forecast?.target?.trend ?? null;
-  const isUp      = trend !== null && displayCA > (rawValue * weight * 0.95);
+  const lowerCA   = rawValue !== null ? ((forecast.target.min ?? rawValue * 0.9) * weight) : null;
+  const upperCA   = rawValue !== null ? ((forecast.target.max ?? rawValue * 1.1) * weight) : null;
+  const isUp      = rawValue !== null && (forecast.predictions?.length > 1
+    ? rawValue > forecast.predictions[0].prediction
+    : true);
 
   return (
     <div className="anim-fade-up">

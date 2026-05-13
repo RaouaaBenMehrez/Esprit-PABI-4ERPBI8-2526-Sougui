@@ -198,10 +198,10 @@ const translations = {
     nav_ceo_clients: 'Clients B2B',
     nav_ceo_board: 'Tableau de Bord',
     nav_ceo_powerbi: 'Power BI Report',
-    nav_ceo_bcg: 'BCG Matrix',
+    nav_ceo_bcg: 'Analyse Portefeuille',
     nav_ceo_logistique: 'Logistique',
     nav_ceo_ml: 'Prédictions ML',
-    nav_ceo_hub: 'Hub Prédictions',
+    nav_ceo_hub: 'Prévision Commandes B2B',
     nav_ceo_b2b: 'B2B Demand',
     nav_ceo_price: 'Price Simulator',
     nav_ceo_supplier: 'Supplier Scoring',
@@ -220,6 +220,8 @@ const translations = {
     pred_seasonal_desc:    'Quels produits pousser selon la période de l\'année',
     pred_revenue_label:    'Prévision Revenus',
     pred_revenue_desc:     'Estimer le CA du mois prochain par canal de vente',
+    pred_price_label:      'Simulateur de Prix',
+    pred_price_desc:       'Simuler l\'impact d\'un changement de prix sur le CA',
 
     // Dashboard nav — Marketing
     nav_mkt_section: 'Marketing',
@@ -231,8 +233,8 @@ const translations = {
     nav_mkt_hub: 'Hub Prédictions',
     nav_mkt_bestseller: 'Best Seller B2C',
     nav_mkt_churn: 'Churn Prediction',
-    nav_mkt_rfm: 'Segmentation RFM',
-    nav_mkt_xgboost: 'XGBoost Client',
+    nav_mkt_rfm:        'Profil Client',
+    nav_mkt_xgboost:    'Score Commercial',
 
     // Dashboard nav — Commercial
     nav_com_section: 'Commercial',
@@ -241,10 +243,10 @@ const translations = {
     nav_com_clients: 'Clients B2B',
     nav_com_board: 'Tableau de Bord',
     nav_com_ml: 'Prédictions ML',
-    nav_com_delivery: 'Delivery Analysis',
-    nav_com_b2b: 'B2B Demand',
-    nav_com_price: 'Price Simulator',
-    nav_com_regression: 'RF — Régression CA',
+    nav_com_delivery:  'Estimation Livraison',
+    nav_com_b2b:       'Prévision Commandes',
+    nav_com_price:     'Simulateur Prix',
+    nav_com_regression: 'Estimation CA Client',
     nav_com_agent: 'Sales Agent IA',
 
     // KPI labels
@@ -491,10 +493,10 @@ const translations = {
     nav_ceo_clients: 'B2B Clients',
     nav_ceo_board: 'Dashboard',
     nav_ceo_powerbi: 'Power BI Report',
-    nav_ceo_bcg: 'BCG Matrix',
+    nav_ceo_bcg: 'Portfolio Analysis',
     nav_ceo_logistique: 'Logistics',
     nav_ceo_ml: 'ML Predictions',
-    nav_ceo_hub: 'Predictions Hub',
+    nav_ceo_hub: 'B2B Order Forecast',
     nav_ceo_b2b: 'B2B Demand',
     nav_ceo_price: 'Price Simulator',
     nav_ceo_supplier: 'Supplier Scoring',
@@ -513,6 +515,8 @@ const translations = {
     pred_seasonal_desc:    'Which products to highlight based on the time of year',
     pred_revenue_label:    'Revenue Forecast',
     pred_revenue_desc:     'Estimate next month revenue by sales channel',
+    pred_price_label:      'Price Simulator',
+    pred_price_desc:       'Simulate the impact of price changes on revenue',
 
     // Dashboard nav — Marketing
     nav_mkt_section: 'Marketing',
@@ -524,8 +528,8 @@ const translations = {
     nav_mkt_hub: 'Predictions Hub',
     nav_mkt_bestseller: 'Best Seller B2C',
     nav_mkt_churn: 'Churn Prediction',
-    nav_mkt_rfm: 'RFM Segmentation',
-    nav_mkt_xgboost: 'XGBoost Client',
+    nav_mkt_rfm:        'Customer Profile',
+    nav_mkt_xgboost:    'Sales Score',
 
     // Dashboard nav — Commercial
     nav_com_section: 'Sales',
@@ -534,10 +538,10 @@ const translations = {
     nav_com_clients: 'B2B Clients',
     nav_com_board: 'Dashboard',
     nav_com_ml: 'ML Predictions',
-    nav_com_delivery: 'Delivery Analysis',
-    nav_com_b2b: 'B2B Demand',
-    nav_com_price: 'Price Simulator',
-    nav_com_regression: 'RF — Revenue Regression',
+    nav_com_delivery:  'Delivery Estimate',
+    nav_com_b2b:       'Order Forecast',
+    nav_com_price:     'Price Simulator',
+    nav_com_regression: 'Revenue Estimate',
     nav_com_agent: 'Sales AI Agent',
 
     // KPI labels

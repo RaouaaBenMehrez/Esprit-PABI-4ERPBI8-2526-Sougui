@@ -1,11 +1,11 @@
 /**
  * PredictionsPage.jsx — Hub centralisé de toutes les prédictions ML Sougui
- * Sert de point d'entrée unifié avec navigation par onglets entre les 6 modèles.
+ * Sert de point d'entrée unifié avec navigation par onglets entre les 8 modèles.
  */
 import React, { useState, useEffect } from 'react';
 import {
-  BrainCircuit, MapPin, TrendingUp, ShoppingBag,
-  AlertTriangle, Factory, BarChart2, CheckCircle,
+  BrainCircuit, TrendingUp, ShoppingBag,
+  Factory, BarChart2, CheckCircle,
   AlertCircle, Loader2, Cpu
 } from 'lucide-react';
 import BestSellerB2C         from './BestSellerB2C';
@@ -13,6 +13,7 @@ import B2BDemandPrediction   from './B2BDemandPrediction';
 import SupplierScoring       from './SupplierScoring';
 import SeasonalRecommend     from './SeasonalRecommend';
 import RevenueForecaster     from './RevenueForecaster';
+
 import { useLanguage }       from '../../context/LanguageContext';
 import translations          from '../../context/translations';
 
@@ -106,6 +107,7 @@ const buildTabs = (t, role = 'ceo') => {
       badge: 'Prophet', desc: t.pred_revenue_desc,
       render: () => <RevenueForecaster />,
     },
+
   ];
   return ALL.filter(tab => tab.roles.includes(role));
 };

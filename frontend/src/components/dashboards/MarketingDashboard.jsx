@@ -82,8 +82,8 @@ const RfmPredictor = () => {
 
   return (
     <div className="predict-inline">
-      <h4 style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)', marginBottom: 4 }}>🎯 Segmentation KMeans RFM</h4>
-      <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16 }}>Classifiez un client selon son comportement d'achat (Récence, Fréquence, Montant)</p>
+      <h4 style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)', marginBottom: 4 }}>🎯 Profil Comportement Client</h4>
+      <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16 }}>Classifiez un client selon son historique d'achat (Activité, Fréquence, Montant)</p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 14 }}>
         {[
@@ -164,8 +164,8 @@ const XgbPredictor = () => {
 
   return (
     <div className="predict-inline">
-      <h4 style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)', marginBottom: 4 }}>🤖 XGBoost — Classification Client</h4>
-      <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16 }}>Prédit le statut et le potentiel commercial d'un client</p>
+      <h4 style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)', marginBottom: 4 }}>📊 Score Commercial du Client</h4>
+      <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16 }}>Identifiez le potentiel commercial d'un client et son niveau d'engagement</p>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
         {[
@@ -449,7 +449,7 @@ const MarketingDashboard = ({ user, onLogout, onUpdateUser }) => {
         {page === 'mk-rfm' && (
           <div className="anim-fade-up">
             <h1 style={{ fontFamily: '"Playfair Display", serif', fontSize: 36, fontWeight: 900, marginBottom: 32, color: 'var(--text-primary)' }}>
-              Segmentation <span style={{ color: PURPLE }}>RFM</span>
+              {t.nav_mkt_rfm || 'Customer Profile'}
             </h1>
             <RfmPredictor />
           </div>
@@ -459,7 +459,7 @@ const MarketingDashboard = ({ user, onLogout, onUpdateUser }) => {
         {page === 'mk-xgboost' && (
           <div className="anim-fade-up">
             <h1 style={{ fontFamily: '"Playfair Display", serif', fontSize: 36, fontWeight: 900, marginBottom: 32, color: 'var(--text-primary)' }}>
-              Classification <span style={{ color: PURPLE }}>XGBoost</span>
+              {t.nav_mkt_xgboost || 'Sales Score'}
             </h1>
             <XgbPredictor />
           </div>

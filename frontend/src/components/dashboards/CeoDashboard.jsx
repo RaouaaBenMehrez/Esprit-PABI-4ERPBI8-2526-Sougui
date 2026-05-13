@@ -108,12 +108,12 @@ const ProphetForecast = () => {
     <div className="predict-inline">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
-          <h4 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>🔮 Prévision CA — Prophet AI</h4>
-          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Prochains 6 mois · Intervalle de confiance 95% · Facebook Prophet</p>
+          <h4 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>🔮 Prévision des Ventes à Venir</h4>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Prochains 6 mois · Intervalle de confiance 95%</p>
         </div>
         <button onClick={run} disabled={loading} className="btn-primary" style={{ padding: '8px 16px', fontSize: 12 }}>
           {loading ? <Loader2 size={13} className="anim-spin" /> : <BrainCircuit size={13} />}
-          {loading ? 'Calcul...' : 'Lancer Prophet'}
+          {loading ? 'Calcul...' : 'Générer la prévision'}
         </button>
       </div>
 
@@ -122,7 +122,7 @@ const ProphetForecast = () => {
       {!data && !loading && !err && (
         <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--text-muted)' }}>
           <BrainCircuit size={36} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
-          <p style={{ fontSize: 13 }}>Cliquez sur "Lancer Prophet" pour générer les prévisions des 6 prochains mois</p>
+          <p style={{ fontSize: 13 }}>Cliquez sur "Générer la prévision" pour obtenir les ventes estimées des 6 prochains mois</p>
         </div>
       )}
 

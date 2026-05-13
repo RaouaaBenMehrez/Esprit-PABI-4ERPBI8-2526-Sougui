@@ -6,8 +6,8 @@ import {
 import { Send, Bot, User, Loader2, BrainCircuit, Search } from 'lucide-react';
 import AppLayout from '../layout/AppLayout';
 import ProfileSettings from '../profile/ProfileSettings';
-import DeliveryAnalysis   from '../predictions/DeliveryAnalysis';
-import PowerBIEmbed        from '../powerbi/PowerBIEmbed';
+import PredictionsPage  from '../predictions/PredictionsPage';
+import PowerBIEmbed     from '../powerbi/PowerBIEmbed';
 import { useLanguage } from '../../context/LanguageContext';
 import translations from '../../context/translations';
 import FloatingOrbs from '../ui/FloatingOrbs';
@@ -29,7 +29,7 @@ const buildNav = (t) => [
     { id: 'cm-powerbi', label: 'Power BI Report', icon: '📊', badge: 'PBI' },
   ]},
   { title: t.nav_com_ml, items: [
-    { id: 'cm-delivery',   label: t.nav_com_delivery,   icon: '🗺️', badge: 'ML' },
+    { id: 'cm-hub',        label: 'Hub Prédictions',        icon: '🧠', badge: 'ML' },
     { id: 'cm-regression', label: t.nav_com_regression, icon: '📈', badge: 'ML' },
     { id: 'cm-agent',      label: t.nav_com_agent,      icon: '🤖', badge: 'Live' },
   ]},
@@ -82,8 +82,8 @@ const RfRegression = () => {
 
   return (
     <div className="predict-inline">
-      <h4 style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)', marginBottom: 4 }}>📈 RandomForest — Régression CA</h4>
-      <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16 }}>Estimez le CA futur d'un client selon son profil RFM (Récence · Fréquence · Montant)</p>
+      <h4 style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)', marginBottom: 4 }}>📈 Estimation du CA Client</h4>
+      <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16 }}>Estimez le chiffre d'affaires futur d'un client selon son historique d'achat</p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 14 }}>
         {[
@@ -112,7 +112,7 @@ const RfRegression = () => {
       {result && bracket && (
         <div style={{ borderRadius: 12, overflow: 'hidden', border: `1.5px solid ${GREEN}30` }}>
           <div style={{ padding: '20px 24px', background: `${GREEN}10`, borderBottom: `1px solid ${GREEN}20`, textAlign: 'center' }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>CA Prédit — RandomForest</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>CA Prévu</div>
             <div style={{ fontSize: 48, fontWeight: 800, color: GREEN, lineHeight: 1 }}>
               {result.ca_predit?.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}
               <span style={{ fontSize: 20, fontWeight: 600, marginLeft: 6 }}>DT</span>
@@ -602,16 +602,19 @@ const CommercialDashboard = ({ user, onLogout, onUpdateUser }) => {
 
         {/* Power BI is now embedded in Vue Commerciale overview */}
 
-        {/* ── RF Regression page ── */}
+        {/* ── Régression page ── */}
         {page === 'cm-regression' && (
           <div className="anim-fade-up">
             <h1 style={{ fontFamily: '"Playfair Display", serif', fontSize: 36, fontWeight: 900, marginBottom: 8, color: 'var(--text-primary)' }}>
-              Régression <span style={{ color: GREEN }}>RandomForest</span>
+              Estimation <span style={{ color: GREEN }}>CA Client</span>
             </h1>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 32 }}>Prédiction du CA client basée sur les données RFM</p>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 32 }}>Prédiction du chiffre d'affaires client basée sur son historique d'achat</p>
             <RfRegression />
           </div>
         )}
+
+        {/* ── Hub Prédictions ML Commercial ── */}
+        {page === 'cm-hub' && <PredictionsPage role="commercial" />}
 
         {/* ── Agent IA page ── */}
         {page === 'cm-agent' && (
@@ -643,8 +646,7 @@ const CommercialDashboard = ({ user, onLogout, onUpdateUser }) => {
           </div>
         )}
 
-        {/* ── Prédictions ML ── */}
-        {page === 'cm-delivery' && <div style={{ padding:'40px' }}><DeliveryAnalysis /></div>}
+        {/* Delivery supprimé du commercial */}
 
         {page === 'settings' && (
           <div style={{ padding: '40px' }}>

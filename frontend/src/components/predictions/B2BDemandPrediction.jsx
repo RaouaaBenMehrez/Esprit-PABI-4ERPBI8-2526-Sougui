@@ -35,6 +35,16 @@ export default function B2BDemandPrediction() {
     </div>
   );
 
+  const SelNum = ({ label, k, opts }) => (
+    <div style={{ marginBottom:14 }}>
+      <label style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', display:'block', marginBottom:6 }}>{label}</label>
+      <select value={form[k]} onChange={e => setForm(p=>({...p,[k]:+e.target.value}))}
+        style={{ width:'100%', padding:'9px 12px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-hover)', color:'var(--text-primary)', fontSize:13 }}>
+        {opts?.map(o => <option key={o.val} value={o.val}>{o.label}</option>)}
+      </select>
+    </div>
+  );
+
   const Sl = ({ label, k, min, max, unit='' }) => (
     <div style={{ marginBottom:14 }}>
       <label style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', display:'flex', justifyContent:'space-between' }}>
@@ -96,7 +106,7 @@ export default function B2BDemandPrediction() {
           <button onClick={predict} disabled={loading}
             style={{ width:'100%', padding:'13px', borderRadius:10, background:'linear-gradient(135deg,#3b82f6,#2563eb)', color:'#fff', border:'none', cursor:'pointer', fontWeight:700, fontSize:14, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
             {loading ? <Loader2 size={16} style={{ animation:'spin 1s linear infinite' }} /> : <TrendingUp size={16} />}
-            {loading ? 'Prédiction en cours...' : 'Prédire la demande B2B'}
+            {loading ? 'Prédiction en cours...' : 'Estimer les Commandes'}
           </button>
         </div>
 
@@ -111,7 +121,7 @@ export default function B2BDemandPrediction() {
                 </div>
                 <div>
                   <div style={{ fontSize:11, fontWeight:800, color:'#3b82f6', textTransform:'uppercase', letterSpacing:1 }}>Estimation du Mois Cible</div>
-                  <div style={{ fontSize:14, color:'var(--text-primary)', fontWeight:600 }}>Mois {form.mois}</div>
+                  <div style={{ fontSize:14, color:'var(--text-primary)', fontWeight:600 }}>{MOIS_LABELS[form.mois - 1]}</div>
                 </div>
               </div>
 
